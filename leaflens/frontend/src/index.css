@@ -1,0 +1,48 @@
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/DMSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Epilogue';
+  src: url('/fonts/Epilogue-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #d8cebe;
+  --ink: #102d1b;
+  --badge: #eaf3ec;
+  --leaf: #1c4d2d;
+  --danger: #b33927;
+  --warning: #d99b26;
+  --success: #2e6c46;
+
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--bg);
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--ink);
+  overflow-x: hidden;
+}
+
+.app-main {
+  width: 100%;
+  min-height: 100vh;
+}

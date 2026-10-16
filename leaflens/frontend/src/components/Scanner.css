@@ -1,0 +1,457 @@
+/* =========================================================
+   Scanner Screen Styles
+   ========================================================= */
+.scanner-screen {
+  min-height: 100vh;
+  padding: 24px;
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.scanner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(13, 36, 24, 0.12);
+  padding-bottom: 16px;
+}
+
+.scanner-back-btn {
+  background: var(--badge);
+  border: none;
+  border-radius: 100px;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scanner-back-btn:hover {
+  background: #dcebd7;
+}
+
+.scanner-grid {
+  display: flex;
+  gap: 32px;
+  flex: 1;
+}
+
+.scanner-left {
+  flex: 0 0 60%;
+  display: flex;
+  flex-direction: column;
+}
+
+.scanner-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-card {
+  position: relative;
+  background: #0d2418;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(13, 36, 24, 0.1);
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-video.mirrored {
+  transform: scaleX(-1);
+}
+
+.camera-frozen-view {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.leaf-overlay-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Scanning sweeps and grid */
+.scanning-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(to right, rgba(185, 211, 179, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(185, 211, 179, 0.15) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.scanning-sweep-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #eef5ea;
+  box-shadow: 0 0 12px #b9d3b3;
+  animation: sweep 2s ease-in-out infinite;
+}
+
+@keyframes sweep {
+  0% { top: 0%; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.camera-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.cam-btn {
+  background: var(--badge);
+  border: none;
+  border-radius: 100px;
+  padding: 10px 20px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cam-btn:hover {
+  background: #d4e7cf;
+}
+
+.cam-btn-primary {
+  background: var(--leaf);
+  color: #f4faf1;
+}
+
+.cam-btn-primary:hover {
+  background: #255338;
+}
+
+.cam-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Traffic Light Component */
+.traffic-light-card {
+  background: var(--badge);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.traffic-light-housing {
+  display: flex;
+  gap: 10px;
+  background: #1a3826;
+  padding: 10px 16px;
+  border-radius: 40px;
+}
+
+.lamp {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  opacity: 0.25;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease;
+}
+
+.lamp-red {
+  background-color: #e74c3c;
+}
+
+.lamp-yellow {
+  background-color: #f1c40f;
+}
+
+.lamp-green {
+  background-color: #2ecc71;
+}
+
+.lamp.active {
+  opacity: 1;
+}
+
+.lamp.active.lamp-red {
+  box-shadow: 0 0 14px rgba(231, 76, 60, 0.7);
+}
+
+.lamp.active.lamp-yellow {
+  box-shadow: 0 0 14px rgba(241, 196, 15, 0.7);
+}
+
+.lamp.active.lamp-green {
+  box-shadow: 0 0 14px rgba(46, 204, 113, 0.7);
+}
+
+.lamp.pulsing {
+  opacity: 1;
+  animation: pulse-lamp 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-lamp {
+  0%, 100% { opacity: 0.4; box-shadow: none; }
+  50% { opacity: 1; box-shadow: 0 0 16px rgba(241, 196, 15, 0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lamp.pulsing {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.traffic-label {
+  font-family: 'Epilogue', Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* Result Details */
+.result-card {
+  background: var(--badge);
+  border-radius: 16px;
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.analysis-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(47, 107, 69, 0.15);
+  color: var(--leaf);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  margin-bottom: 12px;
+  width: fit-content;
+}
+
+.result-plant {
+  font-family: 'Epilogue', Arial, sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  margin: 0 0 6px 0;
+  color: var(--ink);
+}
+
+.result-condition {
+  font-size: 18px;
+  margin: 0 0 16px 0;
+  color: #3f684c;
+}
+
+.confidence-bar-wrap {
+  margin-bottom: 20px;
+}
+
+.confidence-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.confidence-bar-bg {
+  height: 8px;
+  background: rgba(13, 36, 24, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  background: var(--leaf);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.top3-predictions {
+  font-size: 13px;
+  border-top: 1px solid rgba(13, 36, 24, 0.08);
+  padding-top: 14px;
+  margin-top: 14px;
+}
+
+.top3-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  opacity: 0.85;
+}
+
+.result-message-box {
+  background: rgba(217, 155, 38, 0.12);
+  border-left: 4px solid var(--warning);
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.result-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  letter-spacing: 0.2px;
+}
+
+.status-pill-healthy {
+  background: rgba(46, 204, 113, 0.15);
+  color: #1e8449;
+  border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.status-pill-diseased {
+  background: rgba(231, 76, 60, 0.15);
+  color: #c0392b;
+  border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+.status-pill-uncertain {
+  background: rgba(241, 196, 15, 0.15);
+  color: #b7791f;
+  border: 1px solid rgba(241, 196, 15, 0.4);
+}
+
+/* Recommendations Container & Cards */
+.recommendations-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.recommendation-card {
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 13.5px;
+  transition: transform 0.2s ease;
+}
+
+.precautions-card {
+  background: #f4f8f3;
+  border: 1px solid rgba(47, 107, 69, 0.25);
+  box-shadow: 0 2px 6px rgba(47, 107, 69, 0.05);
+}
+
+.cure-card {
+  background: #fdf6f2;
+  border: 1px solid rgba(211, 84, 0, 0.25);
+  box-shadow: 0 2px 6px rgba(211, 84, 0, 0.05);
+}
+
+.rec-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.rec-badge-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.rec-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.1px;
+}
+
+.rec-items-list {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.55;
+  color: #23382c;
+}
+
+.rec-items-list li {
+  margin-bottom: 6px;
+}
+
+.rec-items-list li:last-child {
+  margin-bottom: 0;
+}
+
+.perf-badge {
+  font-size: 11px;
+  opacity: 0.65;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+/* Scanner on Mobile */
+@media (max-width: 700px) {
+  .scanner-screen {
+    padding: 16px;
+  }
+
+  .scanner-grid {
+    flex-direction: column;
+  }
+
+  .scanner-left {
+    flex: none;
+    width: 100%;
+  }
+
+  .scanner-right {
+    flex: none;
+    width: 100%;
+  }
+}

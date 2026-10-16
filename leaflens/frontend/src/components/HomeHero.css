@@ -1,0 +1,839 @@
+/* =========================================================
+   LeafLens Home Hero Styles
+   ========================================================= */
+
+.home-hero {
+  position: relative;
+  width: 100vw;
+  height: 100svh;
+  min-height: 100svh;
+  overflow: hidden;
+  background-color: #d8cebe;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* 1. Main High-Fidelity Hero Photo */
+.hero-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 2. Interactive SVG Eye Overlay */
+.eyes-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* 2c. Pot Front Rims (occludes bottom stems so plants appear physically inside the pots) */
+.hero-pot-rims {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 3;
+  pointer-events: none;
+  user-select: none;
+  display: block;
+}
+
+/* 2b. In-Hero Animated Plant Overlays (JS-positioned to match object-fit:cover) */
+.hero-plant-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+  will-change: transform;
+  overflow: visible;
+}
+
+.hero-plant-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Tall pot dried flowers: wispy stems sway noticeably in wind */
+.hero-plant-anim-flowers {
+  animation: windWaveHeroFlowers 5.6s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+/* Small pot succulent: thick fleshy leaves wobble very subtly */
+.hero-plant-anim-succulent {
+  animation: windWaveHeroSucculent 6.8s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: 0.6s;
+}
+
+/* Left foreground pothos: medium wavy sway matching scene wind */
+.hero-plant-anim-bg-pothos {
+  animation: windWaveHeroBgPothos 5.2s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: 0.3s;
+}
+
+/* ----- In-Hero Plant Wavy Wind Keyframes ----- */
+
+/* Tall Flowers: wispy multi-peak sway with skew flex */
+@keyframes windWaveHeroFlowers {
+  0% {
+    transform: rotateZ(0deg) skewX(0deg) skewY(0deg) translateX(0) translateY(0);
+  }
+  14% {
+    transform: rotateZ(2.4deg) skewX(2.0deg) skewY(-0.8deg) translateX(2px) translateY(-1px);
+  }
+  30% {
+    transform: rotateZ(5.2deg) skewX(4.2deg) skewY(-1.6deg) translateX(4.5px) translateY(-2.5px);
+  }
+  46% {
+    transform: rotateZ(2.8deg) skewX(1.8deg) skewY(-0.6deg) translateX(2px) translateY(-1px);
+  }
+  62% {
+    transform: rotateZ(-3.0deg) skewX(-2.8deg) skewY(1.0deg) translateX(-3px) translateY(-1.5px);
+  }
+  78% {
+    transform: rotateZ(-5.8deg) skewX(-4.8deg) skewY(1.8deg) translateX(-5px) translateY(-2.5px);
+  }
+  90% {
+    transform: rotateZ(-1.8deg) skewX(-1.2deg) skewY(0.4deg) translateX(-1px) translateY(-0.5px);
+  }
+  100% {
+    transform: rotateZ(0deg) skewX(0deg) skewY(0deg) translateX(0) translateY(0);
+  }
+}
+
+/* Succulent: very subtle slow wobble (thick, heavy leaves) */
+@keyframes windWaveHeroSucculent {
+  0% {
+    transform: rotateZ(0deg) skewX(0deg) translateY(0);
+  }
+  20% {
+    transform: rotateZ(1.2deg) skewX(0.8deg) translateY(-0.5px);
+  }
+  42% {
+    transform: rotateZ(2.2deg) skewX(1.5deg) translateY(-1px);
+  }
+  60% {
+    transform: rotateZ(0.6deg) skewX(0.4deg) translateY(-0.3px);
+  }
+  78% {
+    transform: rotateZ(-1.4deg) skewX(-1.0deg) translateY(-0.6px);
+  }
+  92% {
+    transform: rotateZ(-0.5deg) skewX(-0.3deg) translateY(-0.2px);
+  }
+  100% {
+    transform: rotateZ(0deg) skewX(0deg) translateY(0);
+  }
+}
+
+/* Left BG Pothos: medium sway right-to-left wind push */
+@keyframes windWaveHeroBgPothos {
+  0% {
+    transform: rotateZ(0deg) skewX(0deg) skewY(0deg) translateX(0);
+  }
+  18% {
+    transform: rotateZ(2.0deg) skewX(1.8deg) skewY(-0.6deg) translateX(2.5px);
+  }
+  36% {
+    transform: rotateZ(4.2deg) skewX(3.4deg) skewY(-1.2deg) translateX(4.5px);
+  }
+  52% {
+    transform: rotateZ(2.4deg) skewX(1.6deg) skewY(-0.5deg) translateX(2px);
+  }
+  70% {
+    transform: rotateZ(-1.8deg) skewX(-1.6deg) skewY(0.6deg) translateX(-2px);
+  }
+  86% {
+    transform: rotateZ(-3.6deg) skewX(-2.8deg) skewY(1.0deg) translateX(-3.5px);
+  }
+  100% {
+    transform: rotateZ(0deg) skewX(0deg) skewY(0deg) translateX(0);
+  }
+}
+
+/* 3. Realistic Foreground Foliage Overlays (Gentle 3D Indoor Breeze) */
+.foliage-perspective-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+  perspective: 1200px;
+  perspective-origin: 50% 65%;
+  transform-style: preserve-3d;
+  overflow: hidden;
+}
+
+.foliage-cluster {
+  position: absolute;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.foliage-stem {
+  position: relative;
+  width: 100%;
+  transform-origin: bottom center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.foliage-outer-leaf {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: bottom center;
+  transform-style: preserve-3d;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.foliage-img,
+.foliage-leaf-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 14px 22px rgba(18, 35, 22, 0.22));
+}
+
+/* Cluster 1: Left Pothos Vine (Undulating Wavy Wind Flow) */
+.cluster-left-pothos {
+  bottom: -15px;
+  left: -12px;
+  width: 17vw;
+  min-width: 160px;
+  max-width: 270px;
+}
+
+.pothos-stem {
+  transform-origin: bottom center;
+  animation: windWavePothosStem 5.4s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+.pothos-leaf-lag {
+  transform-origin: 65% 30%;
+  animation: windWavePothosLeaves 4.6s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: 0.4s;
+}
+
+/* Cluster 2: Left Near-Camera Cinematic Blurred Leaf */
+.cluster-foreground-blur {
+  bottom: -40px;
+  left: -30px;
+  width: 15vw;
+  min-width: 150px;
+  max-width: 240px;
+  z-index: 6;
+}
+
+.cluster-foreground-blur .foliage-img {
+  filter: blur(1.8px) drop-shadow(0 18px 28px rgba(12, 28, 16, 0.3));
+  opacity: 0.94;
+}
+
+.foreground-blur-stem {
+  transform-origin: bottom left;
+  animation: windWaveBlurLeaf 6.2s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: 0.8s;
+}
+
+/* Cluster 3: Right Ficus Branch (Air-Blown Wavy Sway) */
+.cluster-right-ficus {
+  bottom: -20px;
+  right: -15px;
+  width: 16vw;
+  min-width: 150px;
+  max-width: 250px;
+}
+
+.ficus-stem {
+  transform-origin: bottom center;
+  animation: windWaveFicusStem 5.8s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: 0.5s;
+}
+
+.ficus-leaf-lag {
+  transform-origin: 50% 35%;
+  animation: windWaveFicusLeaves 4.8s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: 1.0s;
+}
+
+/* Cluster 4: Right Mid Edge Dedicated Delicate Sprig (Wavy Air-Blown Ripple) */
+.cluster-right-sprig {
+  top: 34%;
+  right: -20px;
+  width: 20vw;
+  min-width: 190px;
+  max-width: 310px;
+}
+
+.sprig-stem {
+  transform-origin: 88% 80%;
+  animation: windWaveSprig 4.9s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+  animation-delay: 1.2s;
+}
+
+/* =========================================================
+   Realistic Wavy Air-Blown Keyframes
+   Continuous fluid wind flow with multi-peak gust undulation,
+   organic skewing wave, 3D depth, and relaxing return cycles.
+   ========================================================= */
+
+@keyframes windWaveSprig {
+  0% {
+    transform: rotate(0deg) skewX(0deg) skewY(0deg) translateY(0) translateX(0) scale(1);
+  }
+  16% {
+    transform: rotate(-2.8deg) skewX(-2.2deg) skewY(1.5deg) translateY(3.5px) translateX(-2.5px) scale(1.01, 0.99);
+  }
+  34% {
+    transform: rotate(-5.8deg) skewX(-4.6deg) skewY(2.8deg) translateY(7.5px) translateX(-5.5px) scale(1.02, 0.98);
+  }
+  50% {
+    transform: rotate(-3.5deg) skewX(-2.5deg) skewY(1.4deg) translateY(4.0px) translateX(-3.0px) scale(1.0, 1.0);
+  }
+  68% {
+    transform: rotate(-6.4deg) skewX(-5.2deg) skewY(3.2deg) translateY(8.5px) translateX(-6.2px) scale(1.03, 0.97);
+  }
+  84% {
+    transform: rotate(-2.2deg) skewX(-1.8deg) skewY(1.0deg) translateY(2.2px) translateX(-1.5px) scale(0.99, 1.01);
+  }
+  100% {
+    transform: rotate(0deg) skewX(0deg) skewY(0deg) translateY(0) translateX(0) scale(1);
+  }
+}
+
+@keyframes windWaveFicusStem {
+  0% {
+    transform: rotateZ(0deg) skewX(0deg) rotateY(0deg) translateY(0) translateX(0);
+  }
+  22% {
+    transform: rotateZ(-2.8deg) skewX(-2.2deg) rotateY(2.5deg) translateY(2.5px) translateX(-3.0px);
+  }
+  44% {
+    transform: rotateZ(-5.8deg) skewX(-4.0deg) rotateY(4.0deg) translateY(4.5px) translateX(-5.2px);
+  }
+  62% {
+    transform: rotateZ(-3.2deg) skewX(-2.4deg) rotateY(2.6deg) translateY(2.8px) translateX(-3.2px);
+  }
+  80% {
+    transform: rotateZ(-5.2deg) skewX(-3.6deg) rotateY(3.8deg) translateY(4.0px) translateX(-4.6px);
+  }
+  100% {
+    transform: rotateZ(0deg) skewX(0deg) rotateY(0deg) translateY(0) translateX(0);
+  }
+}
+
+@keyframes windWaveFicusLeaves {
+  0% {
+    transform: rotateZ(0deg) skewX(0deg) rotateY(0deg) scale(1);
+  }
+  20% {
+    transform: rotateZ(-2.0deg) skewX(-2.6deg) rotateY(2.2deg) scale(1.02, 0.98);
+  }
+  42% {
+    transform: rotateZ(-4.8deg) skewX(-4.4deg) rotateY(3.8deg) scale(1.03, 0.97);
+  }
+  64% {
+    transform: rotateZ(-2.4deg) skewX(-2.2deg) rotateY(2.2deg) scale(0.99, 1.01);
+  }
+  84% {
+    transform: rotateZ(-4.2deg) skewX(-3.8deg) rotateY(3.5deg) scale(1.02, 0.98);
+  }
+  100% {
+    transform: rotateZ(0deg) skewX(0deg) rotateY(0deg) scale(1);
+  }
+}
+
+@keyframes windWavePothosStem {
+  0% {
+    transform: rotateZ(0deg) skewX(0deg) rotateY(0deg) translateY(0) translateX(0);
+  }
+  22% {
+    transform: rotateZ(3.2deg) skewX(2.4deg) rotateY(-2.5deg) translateY(2.5px) translateX(3.0px);
+  }
+  45% {
+    transform: rotateZ(6.0deg) skewX(4.2deg) rotateY(-4.0deg) translateY(5.0px) translateX(5.5px);
+  }
+  65% {
+    transform: rotateZ(3.6deg) skewX(2.6deg) rotateY(-2.8deg) translateY(3.0px) translateX(3.5px);
+  }
+  82% {
+    transform: rotateZ(5.4deg) skewX(3.8deg) rotateY(-3.8deg) translateY(4.5px) translateX(5.0px);
+  }
+  100% {
+    transform: rotateZ(0deg) skewX(0deg) rotateY(0deg) translateY(0) translateX(0);
+  }
+}
+
+@keyframes windWavePothosLeaves {
+  0% {
+    transform: rotateZ(0deg) skewX(0deg) scale(1);
+  }
+  22% {
+    transform: rotateZ(2.2deg) skewX(2.5deg) scale(1.02, 0.98);
+  }
+  44% {
+    transform: rotateZ(4.8deg) skewX(4.5deg) scale(1.03, 0.97);
+  }
+  66% {
+    transform: rotateZ(2.4deg) skewX(2.2deg) scale(0.99, 1.01);
+  }
+  84% {
+    transform: rotateZ(4.2deg) skewX(3.8deg) scale(1.02, 0.98);
+  }
+  100% {
+    transform: rotateZ(0deg) skewX(0deg) scale(1);
+  }
+}
+
+@keyframes windWaveBlurLeaf {
+  0% {
+    transform: rotateZ(0deg) skewX(0deg) translateY(0);
+  }
+  28% {
+    transform: rotateZ(3.2deg) skewX(2.2deg) rotateY(-2.4deg) translateY(2.8px);
+  }
+  52% {
+    transform: rotateZ(5.5deg) skewX(3.8deg) rotateY(-3.8deg) translateY(4.5px);
+  }
+  74% {
+    transform: rotateZ(3.4deg) skewX(2.4deg) rotateY(-2.6deg) translateY(3.0px);
+  }
+  100% {
+    transform: rotateZ(0deg) skewX(0deg) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.preview-motion) .foliage-stem,
+  :root:not(.preview-motion) .foliage-outer-leaf,
+  :root:not(.preview-motion) .hero-plant-overlay {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* 4. Minimal, Plant-Based Header UI */
+.hero-ui-header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 36px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 255, 255, 0.25) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-sprout-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-family: 'Epilogue', Arial, sans-serif;
+  font-weight: 900;
+  font-size: 26px;
+  color: #102d1b;
+  letter-spacing: -0.5px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f7f2;
+  color: #1c4d2d;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 100px;
+  border: 1px solid rgba(28, 77, 45, 0.16);
+  white-space: nowrap;
+}
+
+/* Actions Row */
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-btn {
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 100px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.action-btn-primary {
+  background: #1c4d2d;
+  color: #f4faf6;
+  border: 1px solid #143b22;
+  box-shadow: 0 3px 10px rgba(28, 77, 45, 0.25);
+}
+
+.action-btn-primary:hover {
+  background: #143b22;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(28, 77, 45, 0.35);
+}
+
+.action-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.action-btn-secondary {
+  background: rgba(244, 248, 245, 0.85);
+  color: #102d1b;
+  border: 1px solid rgba(28, 77, 45, 0.18);
+}
+
+.action-btn-secondary:hover {
+  background: #eaf3ec;
+  border-color: rgba(28, 77, 45, 0.32);
+}
+
+/* 5. Hero Footnote */
+.hero-footer-note {
+  position: relative;
+  z-index: 10;
+  padding: 14px 24px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #274834;
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+/* 6. Modals */
+.hero-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 45, 27, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.hero-modal-card {
+  background: #fbfdfb;
+  border: 2px solid #235433;
+  border-radius: 16px;
+  max-width: 540px;
+  width: 100%;
+  padding: 28px;
+  color: #0d2418;
+  box-shadow: 0 16px 36px rgba(16, 45, 27, 0.25);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.hero-modal-card h2 {
+  font-family: 'Epilogue', Arial, sans-serif;
+  font-weight: 900;
+  margin: 0 0 12px 0;
+  color: #102d1b;
+  font-size: 22px;
+}
+
+.hero-modal-card p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #264332;
+}
+
+.crops-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.crop-group h4 {
+  margin: 0 0 6px 0;
+  color: #1c4d2d;
+  font-size: 15px;
+}
+
+.crop-group ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.how-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.how-step strong {
+  display: block;
+  color: #1c4d2d;
+  font-size: 14px;
+}
+
+.how-step p {
+  margin: 2px 0 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.privacy-card {
+  background: #edf5ef;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  margin-top: 14px;
+  color: #1a4228;
+}
+
+.modal-close-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  background: #1c4d2d;
+  color: #f4faf6;
+  border: none;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: #143b22;
+}
+
+/* =========================================================
+   Responsive Breakpoints: 1024px, 700px, 390px, 320px
+   ========================================================= */
+
+@media (max-width: 1024px) {
+  .hero-ui-header {
+    padding: 18px 24px;
+  }
+
+  .hero-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .hero-ui-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 16px;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.85) 0%,
+      rgba(255, 255, 255, 0.4) 80%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+
+  .hero-brand {
+    justify-content: center;
+  }
+
+  .brand-name {
+    font-size: 22px;
+  }
+
+  .hero-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .action-btn {
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+
+  .action-btn-primary {
+    width: 100%;
+    justify-content: center;
+    order: -1;
+  }
+
+  /* Mobile Foliage: scaled down and pinned to extreme outer edges */
+  .cluster-left-pothos {
+    width: 20vw;
+    min-width: 95px;
+    max-width: 140px;
+    bottom: -10px;
+    left: -10px;
+  }
+
+  .cluster-foreground-blur {
+    display: none; /* Keep mobile view clean and uncluttered around pots */
+  }
+
+  .cluster-right-ficus {
+    width: 18vw;
+    min-width: 85px;
+    max-width: 130px;
+    bottom: -12px;
+    right: -10px;
+  }
+
+  .cluster-right-sprig {
+    width: 22vw;
+    min-width: 105px;
+    max-width: 155px;
+    top: 42%;
+    right: -15px;
+  }
+
+  /* Subtler, gentler breeze sway on mobile */
+  .pothos-stem {
+    animation: pothosStemSwayMobile 10.5s ease-in-out infinite alternate;
+  }
+  .ficus-stem {
+    animation: ficusStemSwayMobile 11.2s ease-in-out infinite alternate;
+  }
+  .sprig-stem {
+    animation: sprigStemSwayMobile 12s ease-in-out infinite alternate;
+  }
+  .foliage-outer-leaf {
+    animation: none; /* Simplify micro-flex on mobile for peak battery/framerate */
+  }
+
+  /* Mobile in-hero plant overlays: subtler animations */
+  .hero-plant-anim-flowers {
+    animation-duration: 10s;
+  }
+  .hero-plant-anim-succulent {
+    animation-duration: 12s;
+  }
+  .hero-plant-anim-bg-pothos {
+    animation-duration: 10s;
+  }
+
+  .hero-footer-note {
+    font-size: 11px;
+    padding: 10px 14px;
+  }
+
+  .crops-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 390px) {
+  .action-btn-secondary {
+    display: none;
+  }
+
+  .action-btn-primary {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 320px) {
+  .brand-name {
+    font-size: 20px;
+  }
+}
+
+/* Mobile keyframes: ultra-subtle sway within 1.2 to 1.5 degrees */
+@keyframes pothosStemSwayMobile {
+  0% {
+    transform: rotateZ(0deg);
+  }
+  50% {
+    transform: rotateZ(1.5deg);
+  }
+  100% {
+    transform: rotateZ(-0.6deg);
+  }
+}
+
+@keyframes ficusStemSwayMobile {
+  0% {
+    transform: rotateZ(0deg);
+  }
+  50% {
+    transform: rotateZ(-1.4deg);
+  }
+  100% {
+    transform: rotateZ(0.5deg);
+  }
+}
+
+@keyframes sprigStemSwayMobile {
+  0% {
+    transform: rotateZ(0deg);
+  }
+  50% {
+    transform: rotateZ(-1.6deg);
+  }
+  100% {
+    transform: rotateZ(0.6deg);
+  }
+}
+

@@ -1,0 +1,27 @@
+# Python Virtual Environments & Cache
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Large Datasets and Archives (Gigabytes of raw images)
+ECS/DataSet/
+Indoor Plant Disease Image Dataset for Classificat/
+*.zip
+*.tar.gz
+
+# Frontend Dependencies & Production Build Outputs
+**/node_modules/
+**/dist/
+**/.vercel/
+.oxlint-cache
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.agent/

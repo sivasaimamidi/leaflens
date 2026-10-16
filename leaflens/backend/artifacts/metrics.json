@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-10-17 02:51:42",
+  "classes_count": 18,
+  "train_samples": 4202,
+  "val_samples": 1050,
+  "final_val_accuracy": 0.8999999761581421,
+  "final_val_loss": 0.5297450423240662,
+  "sample_eval_accuracy": 0.96,
+  "classes": [
+    "Pepper__bell___Bacterial_spot",
+    "Pepper__bell___healthy",
+    "Potato___Early_blight",
+    "Potato___Late_blight",
+    "Potato___healthy",
+    "Snake_Plant_Anthracnose",
+    "Snake_Plant_Healthy",
+    "Snake_Plant_Leaf_Withering",
+    "Tomato__Target_Spot",
+    "Tomato__Tomato_mosaic_virus",
+    "Tomato__Tomato_YellowLeaf__Curl_Virus",
+    "Tomato_Bacterial_spot",
+    "Tomato_Early_blight",
+    "Tomato_Late_blight",
+    "Tomato_Leaf_Mold",
+    "Tomato_Septoria_leaf_spot",
+    "Tomato_Spider_mites_Two_spotted_spider_mite",
+    "Tomato_healthy"
+  ]
+}

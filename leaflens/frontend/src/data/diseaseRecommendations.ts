@@ -1,0 +1,278 @@
+export interface DiseaseRecommendation {
+  plant: string
+  condition: string
+  isHealthy: boolean
+  precautions: string[]
+  cure: string[]
+}
+
+export const DISEASE_RECOMMENDATIONS: Record<string, DiseaseRecommendation> = {
+  "Pepper__bell___Bacterial_spot": {
+    "plant": "Bell Pepper",
+    "condition": "Bacterial Spot",
+    "isHealthy": false,
+    "precautions": [
+      "Use certified pathogen-free seeds and disease-free transplants.",
+      "Rotate crops for 2-3 years away from peppers, tomatoes, potatoes, and eggplants.",
+      "Use drip irrigation instead of overhead sprinklers to prevent water-splash spread.",
+      "Sanitize tools and avoid working around plants when leaves are wet."
+    ],
+    "cure": [
+      "Immediately prune and destroy infected leaves (do not compost); uproot severely infected plants early.",
+      "Spray fixed copper bactericides (Copper Hydroxide or Copper Oxychloride) tank-mixed with Mancozeb every 7-10 days.",
+      "For organic care, apply Bacillus subtilis bio-fungicide or copper soap at the earliest sign of spots."
+    ]
+  },
+  "Pepper__bell___healthy": {
+    "plant": "Bell Pepper",
+    "condition": "Healthy",
+    "isHealthy": true,
+    "precautions": [
+      "Maintain even soil moisture using drip or base watering (1-2 inches per week).",
+      "Space plants 45-60 cm apart for optimal airflow and sunlight.",
+      "Apply organic mulch around the base to suppress weeds and block soil splash."
+    ],
+    "cure": [
+      "No treatment required. The plant is healthy.",
+      "Continue routine weekly inspections of lower leaves and undersides for pests."
+    ]
+  },
+  "Potato___Early_blight": {
+    "plant": "Potato",
+    "condition": "Early Blight",
+    "isHealthy": false,
+    "precautions": [
+      "Plant certified disease-free seed tubers and maintain balanced nitrogen and potassium levels.",
+      "Rotate out of potato and tomato crops for at least 2-3 years and remove volunteer potatoes.",
+      "Avoid overhead watering, or irrigate early in the morning so leaves dry quickly."
+    ],
+    "cure": [
+      "Remove heavily infected lower leaves showing dark concentric target-ring spots.",
+      "Apply protectant fungicides like Mancozeb or Chlorothalonil every 7-10 days.",
+      "For severe cases, alternate with systemic fungicides such as Azoxystrobin or Difenoconazole."
+    ]
+  },
+  "Potato___Late_blight": {
+    "plant": "Potato",
+    "condition": "Late Blight",
+    "isHealthy": false,
+    "precautions": [
+      "Use only certified disease-free seed tubers and destroy all cull piles and volunteer plants.",
+      "Hill soil high around plant bases to protect tubers from spores washing down from foliage.",
+      "Destroy vines completely 2-3 weeks prior to harvest to prevent tuber infection."
+    ],
+    "cure": [
+      "Act immediately: bag and destroy severely blighted foliage to stop rapid field spread.",
+      "Spray targeted fungicides such as Cymoxanil + Mancozeb, Metalaxyl, or Dimethomorph alternating with Chlorothalonil.",
+      "Inspect harvested tubers and store only healthy tubers in cool, dry, ventilated storage."
+    ]
+  },
+  "Potato___healthy": {
+    "plant": "Potato",
+    "condition": "Healthy",
+    "isHealthy": true,
+    "precautions": [
+      "Keep developing tubers well-covered with soil (hilling/earthing up) as plants grow.",
+      "Water at the soil line and monitor weather during cool, humid periods."
+    ],
+    "cure": [
+      "No treatment required. The plant is healthy.",
+      "Maintain regular fertilization and periodic scouting for early foliage spots."
+    ]
+  },
+  "Snake_Plant_Anthracnose": {
+    "plant": "Snake Plant",
+    "condition": "Anthracnose (Fungal Leaf Spot)",
+    "isHealthy": false,
+    "precautions": [
+      "Never mist snake plant leaves or pour water over the crown; water strictly at the soil base.",
+      "Keep ambient humidity low (25%-40%) and maintain strong room airflow.",
+      "Sterilize pruning blades with 70% isopropyl alcohol before cutting any leaf."
+    ],
+    "cure": [
+      "Isolate the infected plant immediately from other indoor plants.",
+      "Using sterilized shears, cut affected leaves well below sunken reddish-brown lesions into firm healthy tissue and discard them.",
+      "Spray remaining foliage with Copper Oxychloride, Mancozeb, or Thiophanate-methyl fungicide every 7-10 days for 2-3 cycles.",
+      "Keep soil completely dry until lesions stop spreading."
+    ]
+  },
+  "Snake_Plant_Leaf_Withering": {
+    "plant": "Snake Plant",
+    "condition": "Leaf Withering (Root Rot / Dehydration Stress)",
+    "isHealthy": false,
+    "precautions": [
+      "Plant only in fast-draining cactus/succulent soil amended with 30%-50% perlite or coarse sand in a pot with drainage holes.",
+      "Allow soil to dry 100% from top to bottom between waterings (every 2-3 weeks in summer, 4-6 weeks in winter).",
+      "Flush soil every 3-4 months with clean water to prevent fertilizer salt burn."
+    ],
+    "cure": [
+      "Unpot the plant and inspect the roots and rhizomes immediately.",
+      "If roots are mushy/black (Root Rot): wash off wet soil, trim rotted roots and soft yellow leaf bases with a sterile knife, dust rhizomes with Carbendazim/Mancozeb fungicide powder, air-dry for 24-48 hours, and repot in dry cactus mix.",
+      "If roots are bone-dry/shrunken (Severe Underwatering): bottom-soak the pot in water for 30 minutes, drain completely, and trim dead crispy brown leaf tips."
+    ]
+  },
+  "Snake_Plant_Healthy": {
+    "plant": "Snake Plant",
+    "condition": "Healthy",
+    "isHealthy": true,
+    "precautions": [
+      "Place in bright, indirect light and water only when the potting mix is completely bone-dry.",
+      "Wipe dust off leaf blades monthly with a dry or slightly damp cloth for optimal photosynthesis.",
+      "Feed lightly only once or twice in spring/summer with half-strength succulent fertilizer."
+    ],
+    "cure": [
+      "No treatment required. Your Snake Plant is healthy and thriving.",
+      "Continue checking soil dryness before each watering to prevent root rot."
+    ]
+  },
+  "Tomato__Target_Spot": {
+    "plant": "Tomato",
+    "condition": "Target Spot",
+    "isHealthy": false,
+    "precautions": [
+      "Stake, trellis, and prune plants to improve airflow and reduce canopy humidity.",
+      "Use drip irrigation instead of overhead watering to minimize leaf wetness.",
+      "Remove old crop debris and avoid rotating with susceptible hosts like cucumber or soybean."
+    ],
+    "cure": [
+      "Prune and destroy infected lower leaves as soon as target-like brown lesions appear.",
+      "Apply fungicides containing Chlorothalonil, Mancozeb, Azoxystrobin, or Boscalid across the lower and inner canopy."
+    ]
+  },
+  "Tomato__Tomato_mosaic_virus": {
+    "plant": "Tomato",
+    "condition": "Tomato Mosaic Virus (ToMV)",
+    "isHealthy": false,
+    "precautions": [
+      "Plant ToMV-resistant tomato varieties and use certified disease-free seed.",
+      "Wash hands thoroughly with soap before touching plants (especially if handling tobacco products).",
+      "Disinfect pruning tools and stakes using a 10% bleach or 20% non-fat dry milk solution between plants."
+    ],
+    "cure": [
+      "There is no chemical cure for viral infections.",
+      "Immediately uproot, bag, and destroy infected plants showing mottled yellow-green fern-like leaves to stop contact spread.",
+      "Sterilize all tools and wash hands immediately after removing infected plants."
+    ]
+  },
+  "Tomato__Tomato_YellowLeaf__Curl_Virus": {
+    "plant": "Tomato",
+    "condition": "Tomato Yellow Leaf Curl Virus (TYLCV)",
+    "isHealthy": false,
+    "precautions": [
+      "Grow TYLCV-resistant hybrids and protect seedlings under 40-50 mesh insect-proof net houses.",
+      "Install yellow sticky traps (10-15 per acre) just above the canopy to trap adult whiteflies.",
+      "Use reflective silver mulch to repel whiteflies and clear weeds around field borders."
+    ],
+    "cure": [
+      "Viral infection cannot be reversed: immediately uproot and bag stunted, upward-curling yellow plants so whiteflies cannot spread the virus.",
+      "Control the whitefly vector using Neem oil (Azadirachtin 1500-3000 ppm) or insecticidal soap for mild cases, or Imidacloprid / Thiamethoxam for severe outbreaks."
+    ]
+  },
+  "Tomato_Bacterial_spot": {
+    "plant": "Tomato",
+    "condition": "Bacterial Spot",
+    "isHealthy": false,
+    "precautions": [
+      "Use certified pathogen-free seeds/transplants and rotate away from tomatoes and peppers for 2-3 years.",
+      "Stake and mulch plants to prevent soil splash, and use drip irrigation.",
+      "Never prune or harvest when foliage is wet from rain or dew."
+    ],
+    "cure": [
+      "Remove symptomatic lower leaves early and sanitize pruning shears between cuts.",
+      "Spray fixed Copper bactericides (Copper Hydroxide / Copper Oxychloride) mixed with Mancozeb every 7-10 days."
+    ]
+  },
+  "Tomato_Early_blight": {
+    "plant": "Tomato",
+    "condition": "Early Blight",
+    "isHealthy": false,
+    "precautions": [
+      "Stake or cage plants and prune the bottom 15-20 cm of leaves once established.",
+      "Apply straw or plastic mulch over the soil to block fungal spores from splashing onto lower leaves.",
+      "Maintain balanced soil fertility and practice a 2-3 year crop rotation."
+    ],
+    "cure": [
+      "Prune off lower leaves showing dark concentric bullseye rings and yellow halos.",
+      "Spray protectant fungicides (Mancozeb, Chlorothalonil, Copper Oxychloride) or systemic fungicides (Azoxystrobin, Tebuconazole) every 7-14 days."
+    ]
+  },
+  "Tomato_Late_blight": {
+    "plant": "Tomato",
+    "condition": "Late Blight",
+    "isHealthy": false,
+    "precautions": [
+      "Avoid planting tomatoes near potatoes and destroy volunteer tomato and potato plants.",
+      "Space and prune plants for maximum airflow and never water overhead in the afternoon or evening.",
+      "Choose resistant tomato cultivars and plant certified disease-free transplants."
+    ],
+    "cure": [
+      "Immediately bag and remove heavily blighted foliage and vines to prevent rapid field epidemic spread.",
+      "Apply protective fungicides such as Chlorothalonil or Mancozeb before disease spreads.",
+      "For active outbreaks, apply systemic oomycete-targeted fungicides like Cymoxanil, Dimethomorph, or Metalaxyl."
+    ]
+  },
+  "Tomato_Leaf_Mold": {
+    "plant": "Tomato",
+    "condition": "Leaf Mold",
+    "isHealthy": false,
+    "precautions": [
+      "Improve greenhouse and garden ventilation to keep relative humidity below 85%.",
+      "Avoid overhead watering and keep foliage dry by watering directly at the soil base.",
+      "Space plants generously and prune suckers to promote air circulation through the canopy."
+    ],
+    "cure": [
+      "Prune and destroy infected lower leaves showing pale yellow spots on top and olive-green velvety mold underneath.",
+      "Apply fungicides such as Copper hydroxide, Chlorothalonil, or Mancozeb at first sign of symptoms.",
+      "For organic growers, spray bio-fungicides containing Bacillus amyloliquefaciens or sulfur sprays."
+    ]
+  },
+  "Tomato_Septoria_leaf_spot": {
+    "plant": "Tomato",
+    "condition": "Septoria Leaf Spot",
+    "isHealthy": false,
+    "precautions": [
+      "Practice a 2-3 year crop rotation away from solanaceous crops (tomatoes, potatoes, eggplants).",
+      "Mulch heavily around the plant base to create a physical barrier against soil-splash spores.",
+      "Never handle or prune tomato plants while the foliage is wet."
+    ],
+    "cure": [
+      "Pinch off and discard infected lower leaves with tiny circular spots and dark brown margins.",
+      "Apply protectant fungicides like Chlorothalonil, Mancozeb, or Copper Oxychloride every 7-10 days during humid weather.",
+      "Clear all fallen leaves and crop debris from the garden floor at the end of the season."
+    ]
+  },
+  "Tomato_Spider_mites_Two_spotted_spider_mite": {
+    "plant": "Tomato",
+    "condition": "Spider Mites (Two-Spotted Spider Mite)",
+    "isHealthy": false,
+    "precautions": [
+      "Keep garden surroundings free of dusty, dry conditions and broadleaf weeds where mites overwinter.",
+      "Routinely inspect leaf undersides for fine webbing and yellow stippling, especially during hot, dry spells.",
+      "Preserve natural predators like ladybugs, predatory mites (Phytoseiulus persimilis), and minute pirate bugs."
+    ],
+    "cure": [
+      "Hose down plant undersides with strong jets of water to dislodge mites and destroy webs.",
+      "Apply insecticidal soap, Neem oil, or horticultural mineral oil thoroughly coating leaf undersides every 3-5 days.",
+      "For severe infestations, treat with selective miticides such as Abamectin, Bifenazate, or Spiromesifen."
+    ]
+  },
+  "Tomato_healthy": {
+    "plant": "Tomato",
+    "condition": "Healthy",
+    "isHealthy": true,
+    "precautions": [
+      "Provide 6-8 hours of direct sunlight and 1-2 inches of water per week at the root zone.",
+      "Stake or cage plants upright to keep foliage off the damp ground.",
+      "Prune lower suckers to maintain canopy airflow and mulch soil to retain steady moisture."
+    ],
+    "cure": [
+      "No treatment required. Your tomato plant is healthy and vigorous.",
+      "Maintain consistent watering to avoid blossom end rot and inspect leaf undersides weekly."
+    ]
+  }
+}
+
+export function getDiseaseRecommendation(className?: string): DiseaseRecommendation | null {
+  if (!className) return null
+  return DISEASE_RECOMMENDATIONS[className] || null
+}
