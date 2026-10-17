@@ -163,6 +163,136 @@
   cursor: not-allowed;
 }
 
+/* Drag and Drop Overlay & Dropzone Card */
+.camera-card-dragging {
+  border: 2px dashed #4ade80 !important;
+  box-shadow: 0 0 24px rgba(74, 222, 128, 0.4) !important;
+}
+
+.camera-drag-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: rgba(13, 36, 24, 0.88);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border-radius: 16px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.drag-overlay-card {
+  text-align: center;
+  padding: 24px 32px;
+  background: rgba(47, 107, 69, 0.35);
+  border: 2px dashed #86efac;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.drag-overlay-icon {
+  font-size: 42px;
+  margin-bottom: 8px;
+  animation: bounce 1.5s infinite;
+}
+
+.drag-overlay-title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.drag-overlay-subtitle {
+  color: #bbf7d0;
+  font-size: 13px;
+}
+
+.scanner-dropzone {
+  margin-top: 16px;
+  padding: 16px 20px;
+  background: rgba(220, 235, 215, 0.4);
+  border: 2px dashed rgba(47, 107, 69, 0.35);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.scanner-dropzone:hover {
+  background: rgba(220, 235, 215, 0.8);
+  border-color: var(--leaf);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(47, 107, 69, 0.08);
+}
+
+.scanner-dropzone:focus-visible {
+  outline: 2px solid var(--leaf);
+  outline-offset: 2px;
+}
+
+.scanner-dropzone-active {
+  background: #dcebd7 !important;
+  border-color: var(--leaf) !important;
+  border-style: solid !important;
+  box-shadow: 0 0 16px rgba(47, 107, 69, 0.25) !important;
+  transform: scale(1.01);
+}
+
+.dropzone-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.dropzone-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.dropzone-title {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.dropzone-title u {
+  color: var(--leaf);
+  text-underline-offset: 2px;
+}
+
+.dropzone-meta {
+  font-size: 12px;
+  color: #557262;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* Traffic Light Component */
 .traffic-light-card {
   background: var(--badge);

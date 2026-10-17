@@ -72,6 +72,10 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [scanDuration, setScanDuration] = useState<number | null>(null)
   const [backendOffline, setBackendOffline] = useState<boolean>(false)
 
+  // Drag and drop state
+  const [isDragging, setIsDragging] = useState<boolean>(false)
+  const dragCounterRef = useRef<number>(0)
+
   const isMobile = window.innerWidth <= 700
 
   // 1. Enumerate and initialize camera
@@ -408,10 +412,17 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
   }
 
-  // 4. Upload photo flow (exact same pipeline as camera frames)
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  // 4. Upload & Drag-and-Drop photo flow (exact same pipeline as camera frames)
+  const processImageFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setTrafficState('uncertain')
+      setScanResult({
+        verdict: 'uncertain',
+        message: 'Please drop or upload a valid image file (JPG, PNG, WebP).',
+        analysis_label: 'Leaf analysis',
+      })
+      return
+    }
 
     setIsScanning(true)
     setTrafficState('scanning')
@@ -464,6 +475,53 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     } finally {
       setIsScanning(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      processImageFile(file)
+    }
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current += 1
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current -= 1
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0
+      setIsDragging(false)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current = 0
+    setIsDragging(false)
+
+    if (isScanning) return
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0]
+      processImageFile(file)
+      e.dataTransfer.clearData()
     }
   }
 
@@ -616,7 +674,13 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <div className="scanner-grid">
         {/* Left Column: Camera / Frame Preview */}
         <div className="scanner-left">
-          <div className="camera-card">
+          <div
+            className={`camera-card ${isDragging ? 'camera-card-dragging' : ''}`}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
             {/* Always keep video element mounted so camera stream is never detached or glitched */}
             <video
               ref={videoRef}
@@ -643,6 +707,17 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   className="leaf-overlay-canvas"
                 />
               </>
+            )}
+
+            {/* Drag and Drop Active Overlay on Camera Frame */}
+            {isDragging && (
+              <div className="camera-drag-overlay">
+                <div className="drag-overlay-card">
+                  <div className="drag-overlay-icon">🌿</div>
+                  <div className="drag-overlay-title">Drop your leaf photo here</div>
+                  <div className="drag-overlay-subtitle">Release to analyze with AI immediately</div>
+                </div>
+              </div>
             )}
 
             {cameraError && (
@@ -707,6 +782,34 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             >
               📁 Upload photo
             </button>
+          </div>
+
+          {/* Dedicated Drag & Drop Dropzone */}
+          <div
+            className={`scanner-dropzone ${isDragging ? 'scanner-dropzone-active' : ''}`}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                fileInputRef.current?.click()
+              }
+            }}
+          >
+            <div className="dropzone-icon-box">
+              <span className="dropzone-icon">🍃</span>
+            </div>
+            <div className="dropzone-info">
+              <span className="dropzone-title">
+                <strong>Drag & drop</strong> leaf image here, or <u>browse files</u>
+              </span>
+              <span className="dropzone-meta">Supports Snake Plant, Tomato, Potato, Pepper (JPG, PNG, WebP)</span>
+            </div>
           </div>
         </div>
 
