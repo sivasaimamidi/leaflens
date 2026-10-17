@@ -138,9 +138,9 @@ def aggregate_crop_predictions(
     for i in surviving_indices:
         box = crop_metadata[i].get("box", [0, 0, 1, 1])
         gr = float(crop_metadata[i].get("green_ratio", 0.5))
-        # Full frame crop ([0, 0, 1, 1]) gets dominant 5.0x weight so subcrops cannot overturn full leaf
+        # Full frame crop ([0, 0, 1, 1]) gets dominant 20.0x weight so localized crops cannot overturn full leaf context
         is_full = (box[0] == 0 and box[1] == 0 and box[2] == 1 and box[3] == 1)
-        w = 5.0 * max(0.2, gr) if is_full else 1.0 * max(0.1, gr)
+        w = 20.0 * max(0.2, gr) if is_full else 1.0 * max(0.1, gr)
         weights.append(w)
 
     weights = np.array(weights)

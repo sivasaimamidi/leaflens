@@ -618,6 +618,7 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     crops.forEach((c) => {
       const [x1, y1, x2, y2] = c.box
+      if (x1 === 0 && y1 === 0 && x2 === 1 && y2 === 1) return
       const w = (x2 - x1) * canvas.width
       const h = (y2 - y1) * canvas.height
       const x = x1 * canvas.width
@@ -720,7 +721,7 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
             )}
 
-            {cameraError && (
+            {!frozenFrame && cameraError && (
               <div
                 style={{
                   position: 'absolute',
