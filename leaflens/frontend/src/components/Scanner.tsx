@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import './Scanner.css'
 import { getDiseaseRecommendation } from '../data/diseaseRecommendations'
+import { VoiceBot } from './VoiceBot'
 
 interface CropBox {
   x: number // 0 to 1
@@ -897,6 +898,9 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     </div>
                   </div>
                 )}
+
+                {/* LeafLens Voice Bot: Spoken Diagnosis & Grounded Assistant */}
+                <VoiceBot scanResult={scanResult} />
 
                 {/* Precautions and Cure Recommendations */}
                 {(() => {

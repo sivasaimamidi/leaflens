@@ -19,6 +19,12 @@ Indoor Plant Disease Image Dataset for Classificat/
 **/.vercel/
 .oxlint-cache
 
+# Environment & Secrets
+.env
+*.env
+*.env.local
+*.env.*.local
+
 # OS & Editor generated files
 .DS_Store
 Thumbs.db

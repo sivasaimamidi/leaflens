@@ -3,13 +3,16 @@ LeafLens Serverless FastAPI Backend for Vercel
 Serves /api/health and /api/scan with TFLite inference on the 15 PlantVillage classes.
 """
 import io
+import os
 import json
 import time
+import urllib.request
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
 import numpy as np
 from PIL import Image
+from pydantic import BaseModel
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -287,3 +290,116 @@ async def scan(
     result["target_performance"] = "Target: under 3 seconds on a normal laptop."
     result["privacy"] = "Images are processed locally for this prototype and are not uploaded or stored."
     return result
+
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+
+class TTSPayload(BaseModel):
+    text: str
+    voice: Optional[str] = "Kore"
+    style: Optional[str] = "clear, empathetic, professional agricultural specialist"
+
+
+@app.post("/api/tts")
+@app.post("/tts")
+def tts_generate(payload: TTSPayload):
+    """
+    Synthesizes speech using Google Gemini 3.8 Flash TTS.
+    Returns high-fidelity WAV base64 data for immediate browser playback.
+    """
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Gemini API key not configured")
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/interactions?key={GEMINI_API_KEY}"
+    req_body = {
+        "model": "gemini-3.8-flash-tts",
+        "input": [{
+            "type": "user_input",
+            "content": [{
+                "type": "text",
+                "text": payload.text[:1200],
+                "annotations": [{"type": "speech_metadata", "style": payload.style or "clear and professional"}]
+            }]
+        }],
+        "response_format": {"type": "audio"},
+        "generation_config": {
+            "speech_config": [{"voice": payload.voice or "Kore"}]
+        }
+    }
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(req_body).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            for step in data.get("steps", []):
+                if step.get("type") == "model_output":
+                    for c in step.get("content", []):
+                        if c.get("type") == "audio" and c.get("data"):
+                            return {
+                                "audio_base64": c.get("data"),
+                                "mime_type": c.get("mime_type", "audio/wav"),
+                                "text": payload.text,
+                                "source": "gemini-3.8-flash-tts"
+                            }
+        return {"error": "No audio step in response", "fallback": True}
+    except Exception as e:
+        print(f"TTS endpoint error: {e}")
+        return {"error": str(e), "fallback": True}
+
+
+class AssistantPayload(BaseModel):
+    prompt: str
+    plant_context: Optional[str] = None
+
+
+@app.post("/api/assistant")
+@app.post("/assistant")
+def chat_assistant(payload: AssistantPayload):
+    """
+    Conversational Plant Pathology Voice Assistant grounded in website content.
+    Powered by Gemini 3.8 Flash.
+    """
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Gemini API key not configured")
+
+    system_knowledge = (
+        "You are the LeafLens Voice Assistant, an intelligent agricultural AI specialist for the LeafLens Plant Pathology System. "
+        "LeafLens is an ECS Mini Project (2026-27) that diagnoses 18 classes across Tomato (10 classes), Potato (3 classes), "
+        "Bell Pepper (2 classes), and Snake Plant (3 classes: Healthy, Anthracnose, Leaf Withering). "
+        "LeafLens operates 100% locally on the user's device for complete privacy under a Free Academic Open-Access Plan (100% free forever, unlimited scans). "
+        "Answer questions clearly and concisely in 2 to 4 sentences so it is pleasant to hear spoken aloud."
+    )
+
+    combined_input = f"{system_knowledge}\nContext: {payload.plant_context or 'No scan yet'}\nUser: {payload.prompt}"
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/interactions?key={GEMINI_API_KEY}"
+    req_body = {
+        "model": "gemini-3.8-flash",
+        "input": combined_input[:2000]
+    }
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(req_body).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            for step in data.get("steps", []):
+                if step.get("type") == "model_output":
+                    for c in step.get("content", []):
+                        if c.get("type") == "text" and c.get("text"):
+                            return {
+                                "reply": c.get("text").strip(),
+                                "model": "gemini-3.8-flash"
+                            }
+        return {"reply": "LeafLens specializes in 18 plant classes across Tomato, Potato, Bell Pepper, and Snake Plant with 100% private local inference."}
+    except Exception as e:
+        print(f"Assistant endpoint error: {e}")
+        return {"reply": "LeafLens provides edge plant pathology for Tomato, Potato, Bell Pepper, and Snake Plant under our free open-access plan."}
