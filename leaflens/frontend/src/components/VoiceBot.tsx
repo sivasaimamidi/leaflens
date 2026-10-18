@@ -9,6 +9,7 @@ import {
   getAvailablePlansButtonContent,
   getPrivacyButtonContent,
   SUPPORTED_LANGUAGES,
+  type ButtonContent,
 } from '../services/voiceAssistant'
 
 interface VoiceBotProps {
@@ -52,6 +53,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
   const silenceTimerRef = useRef<any>(null)
   const isAiVoiceModeActiveRef = useRef<boolean>(false)
   const accumulatedSpeechRef = useRef<string>('')
+  const activeActionRef = useRef<string | null>(null)
 
   // Last spoken diagnosis hash to prevent duplicate auto-trigger on re-renders
   const lastSpokenKeyRef = useRef<string>('')
@@ -67,32 +69,33 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     }
   }, [])
 
-  // Auto-trigger spoken diagnosis when a new scan result is produced
+  // Auto-trigger spoken diagnosis when a new scan result is produced or language changes
   useEffect(() => {
     if (!scanResult) {
       setSpokenText('')
       setAssistantReply(null)
       setActiveCategory(null)
+      activeActionRef.current = null
       lastSpokenKeyRef.current = ''
       voiceAssistant.stop()
       return
     }
 
-    const resultKey = `${scanResult.plant || ''}-${scanResult.condition || ''}-${scanResult.confidence || ''}`
+    const resultKey = `${scanResult.plant || ''}-${scanResult.condition || ''}-${scanResult.confidence || ''}-${selectedLanguage}`
     if (resultKey === lastSpokenKeyRef.current) return
     lastSpokenKeyRef.current = resultKey
 
-    const { text, isDecisionMode: decisionMode } = buildDiagnosisSpeechText(scanResult)
+    const { text, isDecisionMode: decisionMode, phoneticText } = buildDiagnosisSpeechText(scanResult, selectedLanguage)
     setSpokenText(text)
     setIsDecisionMode(decisionMode)
 
     // On/Off Rule: If toggle is ON, announce immediately. If OFF, stay completely silent.
     if (isVoiceOn) {
-      voiceAssistant.speakText(text)
+      voiceAssistant.speakText(text, selectedLanguage, phoneticText)
     } else {
       voiceAssistant.stop()
     }
-  }, [scanResult, isVoiceOn])
+  }, [scanResult, isVoiceOn, selectedLanguage])
 
   // Toggle On/Off handler
   const handleToggleVoiceOn = () => {
@@ -102,8 +105,8 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     if (!nextState) {
       voiceAssistant.stop()
     } else if (spokenText && !isSpeaking) {
-      // If switched ON and we already have a diagnosis, play it
-      voiceAssistant.speakText(spokenText)
+      // If switched ON and we already have a diagnosis, play it in selected language
+      voiceAssistant.speakText(spokenText, selectedLanguage)
     }
   }
 
@@ -111,13 +114,13 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     if (isSpeaking) {
       voiceAssistant.stop()
     } else if (spokenText) {
-      voiceAssistant.speakText(spokenText)
+      voiceAssistant.speakText(spokenText, selectedLanguage)
     }
   }
 
   const handleReplay = () => {
     if (spokenText) {
-      voiceAssistant.speakText(spokenText)
+      voiceAssistant.speakText(spokenText, selectedLanguage)
     }
   }
 
@@ -136,45 +139,91 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
 
   /**
    * Fast, dedicated handlers for the five right-side buttons.
-   * Delivers distinct, specialized content with instant response time (< 0.2s).
+   * Delivers distinct, specialized content with instant response time (< 0.2s) in selected language.
    */
   const handleButtonClick = (action: 'precautions' | 'cure' | 'supported_plants' | 'plans' | 'privacy') => {
-    let content = { title: '', displayText: '', speechText: '' }
+    activeActionRef.current = action
+    let content: ButtonContent = { title: '', displayText: '', speechText: '' }
 
     switch (action) {
       case 'precautions':
-        content = getPrecautionsButtonContent(scanResult)
+        content = getPrecautionsButtonContent(scanResult, selectedLanguage)
         break
       case 'cure':
-        content = getCureTwoStepsButtonContent(scanResult)
+        content = getCureTwoStepsButtonContent(scanResult, selectedLanguage)
         break
       case 'supported_plants':
-        content = getSupportedPlantsButtonContent()
+        content = getSupportedPlantsButtonContent(selectedLanguage)
         break
       case 'plans':
-        content = getAvailablePlansButtonContent()
+        content = getAvailablePlansButtonContent(selectedLanguage)
         break
       case 'privacy':
-        content = getPrivacyButtonContent()
+        content = getPrivacyButtonContent(selectedLanguage)
         break
     }
 
     setActiveCategory(content.title)
     setAssistantReply(content.displayText)
 
-    // Play speech immediately (< 0.2s latency)
-    voiceAssistant.speakText(content.speechText)
+    // Play speech immediately (< 0.2s latency) in selected language with fail-safe phonetic fallback
+    voiceAssistant.speakText(content.speechText, selectedLanguage, content.phoneticText)
   }
 
   // Freeform custom question input with conversation history memory
   const handleSelectLanguage = (code: string) => {
     setSelectedLanguage(code)
     localStorage.setItem('leaflens_voice_lang', code)
+
+    // Dispatch custom event so parent components (like Scanner) update instantly
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('leaflens-lang-changed', { detail: code }))
+    }
+
+    // If an action button was active, reload its content in the newly selected language
+    if (activeActionRef.current && scanResult) {
+      const action = activeActionRef.current as 'precautions' | 'cure' | 'supported_plants' | 'plans' | 'privacy'
+      let content: ButtonContent = { title: '', displayText: '', speechText: '' }
+      switch (action) {
+        case 'precautions':
+          content = getPrecautionsButtonContent(scanResult, code)
+          break
+        case 'cure':
+          content = getCureTwoStepsButtonContent(scanResult, code)
+          break
+        case 'supported_plants':
+          content = getSupportedPlantsButtonContent(code)
+          break
+        case 'plans':
+          content = getAvailablePlansButtonContent(code)
+          break
+        case 'privacy':
+          content = getPrivacyButtonContent(code)
+          break
+      }
+      setActiveCategory(content.title)
+      setAssistantReply(content.displayText)
+      if (isVoiceOn) {
+        voiceAssistant.speakText(content.speechText, code, content.phoneticText)
+      }
+      return
+    }
+
+    // Otherwise update diagnosis speech text and announce if voice is ON
+    if (scanResult) {
+      const { text, isDecisionMode: decisionMode, phoneticText } = buildDiagnosisSpeechText(scanResult, code)
+      setSpokenText(text)
+      setIsDecisionMode(decisionMode)
+      if (isVoiceOn) {
+        voiceAssistant.speakText(text, code, phoneticText)
+      }
+    }
+
     if (isAiVoiceModeActiveRef.current) {
       if (aiVoiceRecognitionRef.current) {
         try {
           aiVoiceRecognitionRef.current.abort()
-        } catch (_) {}
+        } catch {}
       }
       startAiVoiceListening(code)
     }
@@ -185,6 +234,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     const q = (queryToAsk || userQuery).trim()
     if (!q || isAnswering) return
 
+    activeActionRef.current = null
     setIsAnswering(true)
     setUserQuery('')
     setActiveCategory(`You asked: "${q}"`)
@@ -231,7 +281,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     if (isListening && recognitionRef.current) {
       try {
         recognitionRef.current.stop()
-      } catch (_) {}
+      } catch {}
       setIsListening(false)
       return
     }
@@ -240,7 +290,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort()
-        } catch (_) {}
+        } catch {}
       }
 
       const recognition = new SpeechRecognition()
@@ -299,7 +349,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       if (aiVoiceRecognitionRef.current) {
         try {
           aiVoiceRecognitionRef.current.stop()
-        } catch (_) {}
+        } catch {}
       }
       setIsAiVoiceListening(false)
       setIsAiVoiceProcessing(false)
@@ -320,7 +370,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     if (aiVoiceRecognitionRef.current) {
       try {
         aiVoiceRecognitionRef.current.abort()
-      } catch (_) {}
+      } catch {}
     }
 
     try {
@@ -356,7 +406,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
             if (finalQuery && isAiVoiceModeActiveRef.current) {
               try {
                 recognition.stop()
-              } catch (_) {}
+              } catch {}
               processSpokenQuestion(finalQuery)
             }
           }, 1800)
@@ -394,6 +444,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
   }
 
   const processSpokenQuestion = async (spokenQuestion: string) => {
+    activeActionRef.current = null
     setIsAiVoiceListening(false)
     setIsAiVoiceProcessing(true)
 
@@ -568,6 +619,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
               onClick={() => {
                 setAssistantReply(null)
                 setActiveCategory(null)
+                activeActionRef.current = null
                 voiceAssistant.stop()
               }}
               title="Close answer"

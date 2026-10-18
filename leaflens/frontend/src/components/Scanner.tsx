@@ -2,6 +2,11 @@ import React, { useState, useRef, useEffect } from 'react'
 import './Scanner.css'
 import { getDiseaseRecommendation } from '../data/diseaseRecommendations'
 import { VoiceBot } from './VoiceBot'
+import {
+  getLocalizedPlantName,
+  getLocalizedConditionName,
+  getLocalizedVerdict,
+} from '../services/voiceAssistant'
 
 interface CropBox {
   x: number // 0 to 1
@@ -72,6 +77,21 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [scanDuration, setScanDuration] = useState<number | null>(null)
   const [backendOffline, setBackendOffline] = useState<boolean>(false)
+
+  // Multilingual synchronization
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
+    return localStorage.getItem('leaflens_voice_lang') || 'auto'
+  })
+
+  useEffect(() => {
+    const handleLangChange = (e: any) => {
+      setSelectedLanguage(e.detail || localStorage.getItem('leaflens_voice_lang') || 'auto')
+    }
+    window.addEventListener('leaflens-lang-changed', handleLangChange)
+    return () => {
+      window.removeEventListener('leaflens-lang-changed', handleLangChange)
+    }
+  }, [])
 
   // Drag and drop state
   const [isDragging, setIsDragging] = useState<boolean>(false)
@@ -856,19 +876,19 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div className="result-header-row">
                   <div className="analysis-badge">🌿 Leaf analysis</div>
                   <span className={`status-pill status-pill-${scanResult.verdict}`}>
-                    {scanResult.verdict === 'healthy'
-                      ? '🟢 Healthy'
-                      : scanResult.verdict === 'diseased'
-                      ? '🔴 Needs Attention (Diseased)'
-                      : '🟡 Not Sure'}
+                    {getLocalizedVerdict(scanResult.verdict, selectedLanguage)}
                   </span>
                 </div>
 
                 {scanResult.plant && scanResult.plant !== 'Uncertain' && (
-                  <h2 className="result-plant">{scanResult.plant}</h2>
+                  <h2 className="result-plant">
+                    {getLocalizedPlantName(scanResult.plant, selectedLanguage)}
+                  </h2>
                 )}
                 {scanResult.condition && (
-                  <div className="result-condition">{scanResult.condition}</div>
+                  <div className="result-condition">
+                    {getLocalizedConditionName(scanResult.condition, selectedLanguage)}
+                  </div>
                 )}
 
                 {scanResult.message && (

@@ -376,15 +376,15 @@ def detect_query_language(text: str, default_lang: str = "en-IN") -> str:
 
     # Romanized code-switching detection
     q = text.lower()
-    if any(k in q for k in ["eppudu", "veyyali", "cheyyali", "neellu", "aakulu", "ela", "enti", "rogalu"]):
+    if any(k in q for k in ["eppudu", "veyyali", "cheyyali", "neellu", "aakulu", "aaku", "ela", "enti", "rogalu", "kuruunchehi", "mardangaalaga", "chippu", "cheppu", "gurinchi", "jaagratha", "jaagratta", "mandhu", "nayam"]):
         return "te-IN"
-    if any(k in q for k in ["kaise", "paani", "patti", "dekhbhal", "bataiye", "chahiye", "karna", "bimari"]):
+    if any(k in q for k in ["kaise", "paani", "patti", "dekhbhal", "bataiye", "chahiye", "karna", "bimari", "dawai", "savdhani", "upchar"]):
         return "hi-IN"
-    if any(k in q for k in ["eppo", "thanni", "oothanum", "pannanum", "ilaigal", "solla", "noi", "marundhu"]):
+    if any(k in q for k in ["eppo", "thanni", "oothanum", "pannanum", "ilaigal", "solla", "noi", "marundhu", "enna", "kaapatha", "theervu", "solreengala"]):
         return "ta-IN"
-    if any(k in q for k in ["yavaga", "haakbeku", "neeru", "yele", "maadbeku", "hege", "roga", "kannada"]):
+    if any(k in q for k in ["yavaga", "haakbeku", "neeru", "yele", "maadbeku", "hege", "roga", "kannada", "enu", "chikitse", "eccharike"]):
         return "kn-IN"
-    if any(k in q for k in ["eppozhaanu", "vellam", "ozhikkendathu", "cheyyendathu", "ila", "engane", "rogam"]):
+    if any(k in q for k in ["eppozhaanu", "vellam", "ozhikkendathu", "cheyyendathu", "ila", "engane", "rogam", "entha", "chikitsa", "jagratha"]):
         return "ml-IN"
 
     return default_lang
@@ -530,7 +530,7 @@ def chat_assistant(payload: AssistantPayload):
                         "reply": parts[0]["text"].strip(),
                         "model": "gemini-2.5-flash"
                     }
-        return {"reply": get_botanical_fallback(query_text, payload.plant_context, payload.history), "model": "botanical-fallback"}
+        return {"reply": get_botanical_fallback(query_text, payload.plant_context, payload.history, payload.selected_lang), "model": "botanical-fallback"}
     except Exception as e:
         print(f"Assistant endpoint error: {e}")
-        return {"reply": get_botanical_fallback(query_text, payload.plant_context, payload.history), "model": "botanical-fallback"}
+        return {"reply": get_botanical_fallback(query_text, payload.plant_context, payload.history, payload.selected_lang), "model": "botanical-fallback"}
