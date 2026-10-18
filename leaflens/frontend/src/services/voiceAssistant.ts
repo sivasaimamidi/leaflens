@@ -289,6 +289,32 @@ export function getPrivacyButtonContent(): ButtonContent {
   }
 }
 
+function getBotanicalFallback(query: string, plantContext?: string): string {
+  const q = query.toLowerCase()
+  const ctx = (plantContext || '').toLowerCase()
+
+  if (q.includes('precaution') || q.includes('prevent') || q.includes('avoid') || q.includes('protect')) {
+    if (ctx.includes('snake') || q.includes('sansevieria')) {
+      return "For Snake Plants, key precautions include watering strictly at the soil base, allowing the soil to dry completely between waterings, maintaining low ambient humidity, and sterilizing pruning shears to prevent fungal leaf spot."
+    }
+    return "To prevent plant diseases, water strictly at the soil base rather than over foliage, provide adequate spacing between plants for airflow, disinfect pruning shears between cuts, and clear fallen leaves from the soil surface."
+  }
+
+  if (q.includes('cure') || q.includes('treat') || q.includes('remedy') || q.includes('step') || q.includes('medicine')) {
+    return "For active treatment, immediately prune and isolate affected foliage to stop pathogen spread, improve air circulation, and apply a targeted copper or organic bio-fungicide spray suited for the condition."
+  }
+
+  if (q.includes('water') || q.includes('moisture') || q.includes('irrigation')) {
+    return "Water thoroughly only when the top few inches of soil are dry to the touch, ensure pots have unobstructed drainage holes, and avoid letting roots sit in pooled water."
+  }
+
+  if (q.includes('light') || q.includes('sun')) {
+    return "Most foliage thrives in bright, indirect sunlight. Protect leaves from intense direct midday rays to avoid leaf scorch, and rotate the container periodically for uniform growth."
+  }
+
+  return "Maintain balanced soil moisture, ensure adequate airflow between leaves, disinfect gardening tools regularly, and isolate any symptomatic foliage at the first sign of discoloration."
+}
+
 class VoiceAssistantService {
   private currentAudio: HTMLAudioElement | null = null
   private isMuted: boolean = false
@@ -419,8 +445,8 @@ class VoiceAssistantService {
   }
 
   /**
-   * Conversational LLM Q&A using Gemini 3.8 Flash grounded in website content
-   * (Used only when the user types a custom question into the input bar).
+   * Conversational LLM Q&A using Gemini 2.5 Flash grounded in botanical guidance.
+   * Delivers focused, authoritative plant pathology and care responses.
    */
   public async askAssistant(
     question: string,
@@ -435,9 +461,6 @@ Directives:
 2. Plant-Only Scope: Discuss exclusively plants, leaves, botany, and cultivation. If the user asks about an unrelated topic, respond solely with: "I am designated exclusively to assist with botanical and plant-related topics. Please let me know if you have an inquiry regarding plants, foliage, or crop care."
 3. No Unfounded Assumptions: Do not assume or invent facts beyond what the user has stated.
 4. Voice Synthesis Ready: Provide plain text only without markdown formatting (no asterisks, headings, bullet marks, or emojis) so the output sounds natural and articulate when read by a voice synthesizer. Deliver your answer in 2 to 4 concise sentences.
-
-User Query:
-${question}
 `
 
     try {
@@ -445,7 +468,7 @@ ${question}
         const resp = await fetch('/api/assistant', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, plant_context: currentDiagnosisContext }),
+          body: JSON.stringify({ prompt: question, plant_context: currentDiagnosisContext }),
         })
         if (resp.ok) {
           const data = await resp.json()
@@ -457,35 +480,39 @@ ${question}
 
       if (GEMINI_API_KEY) {
         const directResp = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/interactions?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'gemini-3.8-flash',
-              input: prompt,
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: `${prompt}\n${
+                        currentDiagnosisContext ? `Current Plant Context: ${currentDiagnosisContext}\n` : ''
+                      }User Query: ${question}`
+                    }
+                  ]
+                }
+              ],
             }),
           }
         )
 
         if (directResp.ok) {
           const data = await directResp.json()
-          for (const s of data.steps || []) {
-            if (s.type === 'model_output') {
-              for (const c of s.content || []) {
-                if (c.type === 'text' && c.text) {
-                  return c.text.trim()
-                }
-              }
-            }
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+          if (text) {
+            return text.trim()
           }
         }
       }
 
-      return "LeafLens provides instant edge AI diagnosis for 18 plant classes across Tomato, Potato, Bell Pepper, and Snake Plant, with 100% private local inference under our free academic open-access plan."
+      return getBotanicalFallback(question, currentDiagnosisContext)
     } catch (err: any) {
       console.error('AskAssistant error:', err)
-      return "I can answer questions regarding your plant's diagnosis, treatment steps, supported crops, or LeafLens free prototype features."
+      return getBotanicalFallback(question, currentDiagnosisContext)
     }
   }
 }

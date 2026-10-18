@@ -357,15 +357,41 @@ class AssistantPayload(BaseModel):
     plant_context: Optional[str] = None
 
 
+def get_botanical_fallback(query: str, plant_context: Optional[str] = None) -> str:
+    q = query.lower()
+    ctx = (plant_context or "").lower()
+
+    if "precaution" in q or "prevent" in q or "avoid" in q or "protect" in q:
+        if "snake" in ctx or "sansevieria" in q:
+            return "For Snake Plants, key precautions include watering strictly at the soil base, allowing the soil to dry completely between waterings, maintaining low ambient humidity, and sterilizing pruning shears to prevent fungal leaf spot."
+        return "To prevent plant diseases, water strictly at the soil base rather than overhead, provide adequate spacing between plants for airflow, disinfect pruning shears between cuts, and clear fallen leaves from the soil surface."
+
+    if "cure" in q or "treat" in q or "remedy" in q or "step" in q or "medicine" in q:
+        return "For active treatment, immediately prune and isolate affected foliage to stop pathogen spread, improve air circulation, and apply a targeted copper or organic bio-fungicide spray suited for the condition."
+
+    if "water" in q or "moisture" in q or "irrigation" in q:
+        return "Water thoroughly only when the top few inches of soil are dry to the touch, ensure pots have unobstructed drainage holes, and avoid letting roots sit in pooled water."
+
+    if "light" in q or "sun" in q:
+        return "Most foliage thrives in bright, indirect sunlight. Protect leaves from intense direct midday rays to avoid leaf scorch, and rotate the container periodically for uniform growth."
+
+    return "Maintain balanced soil moisture, ensure adequate airflow between leaves, disinfect gardening tools regularly, and isolate any symptomatic foliage at the first sign of discoloration."
+
+
 @app.post("/api/assistant")
 @app.post("/assistant")
 def chat_assistant(payload: AssistantPayload):
     """
-    Conversational Plant Pathology Voice Assistant grounded in website content.
-    Powered by Gemini 3.8 Flash.
+    Conversational Plant Pathology Voice Assistant grounded in botanical guidance.
+    Powered by Gemini 2.5 Flash with intelligent botanical fallback.
     """
+    query_text = payload.prompt.strip()
+
     if not GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="Gemini API key not configured")
+        return {
+            "reply": get_botanical_fallback(query_text, payload.plant_context),
+            "model": "offline-botanical-engine"
+        }
 
     system_knowledge = (
         "You are a formal botanical specialist and voice assistant. "
@@ -374,15 +400,20 @@ def chat_assistant(payload: AssistantPayload):
         "Discuss exclusively plants, leaves, and related botanical topics. If the query is unrelated to plants or their parts, respond solely with: "
         "'I am designated exclusively to assist with botanical and plant-related topics. Please let me know if you have an inquiry regarding plants, foliage, or crop care.' "
         "Do not assume or extrapolate new information beyond what the user has provided. "
+        "Do not mention any brand names or application names unless asked. "
         "Provide plain text responses without markdown formatting or bullet points, suitable for voice synthesis, in 2 to 4 concise sentences."
     )
 
-    combined_input = f"{system_knowledge}\nUser Query: {payload.prompt}"
+    context_info = f"Current Plant Context: {payload.plant_context}\n" if payload.plant_context else ""
+    combined_input = f"{system_knowledge}\n{context_info}User Query: {query_text}"
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/interactions?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     req_body = {
-        "model": "gemini-3.8-flash",
-        "input": combined_input[:2000]
+        "contents": [
+            {
+                "parts": [{"text": combined_input[:3000]}]
+            }
+        ]
     }
 
     try:
@@ -391,17 +422,17 @@ def chat_assistant(payload: AssistantPayload):
             data=json.dumps(req_body).encode("utf-8"),
             headers={"Content-Type": "application/json"}
         )
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            for step in data.get("steps", []):
-                if step.get("type") == "model_output":
-                    for c in step.get("content", []):
-                        if c.get("type") == "text" and c.get("text"):
-                            return {
-                                "reply": c.get("text").strip(),
-                                "model": "gemini-3.8-flash"
-                            }
-        return {"reply": "LeafLens specializes in 18 plant classes across Tomato, Potato, Bell Pepper, and Snake Plant with 100% private local inference."}
+            candidates = data.get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                if parts and parts[0].get("text"):
+                    return {
+                        "reply": parts[0]["text"].strip(),
+                        "model": "gemini-2.5-flash"
+                    }
+        return {"reply": get_botanical_fallback(query_text, payload.plant_context), "model": "botanical-fallback"}
     except Exception as e:
         print(f"Assistant endpoint error: {e}")
-        return {"reply": "LeafLens provides edge plant pathology for Tomato, Potato, Bell Pepper, and Snake Plant under our free open-access plan."}
+        return {"reply": get_botanical_fallback(query_text, payload.plant_context), "model": "botanical-fallback"}
