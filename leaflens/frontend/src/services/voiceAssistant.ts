@@ -289,11 +289,47 @@ export function getPrivacyButtonContent(): ButtonContent {
   }
 }
 
+export interface LanguageOption {
+  code: string
+  label: string
+  name: string
+  bcp47: string
+}
+
+export const SUPPORTED_LANGUAGES: LanguageOption[] = [
+  { code: 'auto', label: '🌐 Auto', name: 'Auto-Detect', bcp47: 'en-IN' },
+  { code: 'en-IN', label: '🇬🇧 English', name: 'English (India)', bcp47: 'en-IN' },
+  { code: 'te-IN', label: '🇮🇳 తెలుగు', name: 'Telugu', bcp47: 'te-IN' },
+  { code: 'ta-IN', label: '🇮🇳 தமிழ்', name: 'Tamil', bcp47: 'ta-IN' },
+  { code: 'hi-IN', label: '🇮🇳 हिन्दी', name: 'Hindi', bcp47: 'hi-IN' },
+  { code: 'kn-IN', label: '🇮🇳 ಕನ್ನಡ', name: 'Kannada', bcp47: 'kn-IN' },
+  { code: 'ml-IN', label: '🇮🇳 മലയാളം', name: 'Malayalam', bcp47: 'ml-IN' },
+]
+
+export function detectLanguage(text: string, defaultLang: string = 'en-IN'): string {
+  if (/[\u0C00-\u0C7F]/.test(text)) return 'te-IN' // Telugu
+  if (/[\u0B80-\u0BFF]/.test(text)) return 'ta-IN' // Tamil
+  if (/[\u0900-\u097F]/.test(text)) return 'hi-IN' // Hindi
+  if (/[\u0C80-\u0CFF]/.test(text)) return 'kn-IN' // Kannada
+  if (/[\u0D00-\u0D7F]/.test(text)) return 'ml-IN' // Malayalam
+
+  const lower = text.toLowerCase()
+  if (/\b(eppudu|veyyali|cheyyali|neellu|aakulu|ela|enti|rogalu|thaggali)\b/.test(lower)) return 'te-IN'
+  if (/\b(kaise|paani|patti|dekhbhal|bataiye|chahiye|karna|bimari|dawai)\b/.test(lower)) return 'hi-IN'
+  if (/\b(eppo|thanni|oothanum|pannanum|ilaigal|solla|noi|marundhu|enna)\b/.test(lower)) return 'ta-IN'
+  if (/\b(yavaga|haakbeku|neeru|yele|maadbeku|hege|roga|kannada|enu)\b/.test(lower)) return 'kn-IN'
+  if (/\b(eppozhaanu|vellam|ozhikkendathu|cheyyendathu|ila|engane|rogam|entha)\b/.test(lower)) return 'ml-IN'
+
+  return defaultLang
+}
+
 function getBotanicalFallback(
   query: string,
   plantContext?: string,
-  history?: Array<{ role: string; text: string }>
+  history?: Array<{ role: string; text: string }>,
+  langHint?: string
 ): string {
+  const lang = langHint && langHint !== 'auto' ? langHint : detectLanguage(query)
   const q = query.toLowerCase()
   let ctx = (plantContext || '').toLowerCase()
 
@@ -307,6 +343,62 @@ function getBotanicalFallback(
     }
   }
 
+  // Telugu (తెలుగు)
+  if (lang.startsWith('te')) {
+    if (q.includes('precaution') || q.includes('prevent') || q.includes('avoid') || q.includes('protect') || q.includes('jakratha')) {
+      return "మొక్కలకు వ్యాధులు సోకకుండా ఉండటానికి, నీటిని ఆకులపై కాకుండా వేర్ల వద్ద మాత్రమే పోయండి. మొక్కల మధ్య మంచి గాలి ప్రసరణ ఉండేలా చూసుకోండి మరియు ఎండిన ఆకులను క్రమం తప్పకుండా తొలగించండి."
+    }
+    if (q.includes('cure') || q.includes('treat') || q.includes('remedy') || q.includes('nayam') || q.includes('mandhu')) {
+      return "తెగులు సోకిన ఆకులను వెంటనే తొలగించి దూరంగా పారవేయండి. సమస్య మరింత వ్యాపించకుండా వేప నూనె లేదా కాపర్ ఆధారిత స్ప్రేను తగిన మోతాదులో పిచికారీ చేయండి."
+    }
+    return "మొక్క మొదట్లోని మట్టి పూర్తిగా ఆరిపోయినప్పుడు మాత్రమే నీరు పెట్టండి. కుండీలో అదనపు నీరు నిల్వ ఉండకుండా డ్రైనేజీ రంధ్రాలు సరిగ్గా ఉన్నాయో లేదో నిర్ధారించుకోండి."
+  }
+
+  // Tamil (தமிழ்)
+  if (lang.startsWith('ta')) {
+    if (q.includes('precaution') || q.includes('prevent') || q.includes('avoid') || q.includes('protect') || q.includes('kaapatha')) {
+      return "செடிகளுக்கு நோய் பரவாமல் தடுக்க, இலைகளின் மேல் தண்ணீர் தெளிக்காமல் வேர்ப்பகுதியில் மட்டுமே ஊற்றவும். செடிகளுக்கு இடையே நல்ல காற்றோட்டம் இருப்பதை உறுதி செய்து, பாதிக்கப்பட்ட இலைகளை உடனே அகற்றி விடுங்கள்."
+    }
+    if (q.includes('cure') || q.includes('treat') || q.includes('remedy') || q.includes('marundhu')) {
+      return "நோய் தாக்கப்பட்ட இலைகளை வெட்டி அகற்றி பாதுகாப்பாக அப்புறப்படுத்துங்கள். பிறகு வேப்ப எண்ணெய் அல்லது இயற்கை பூஞ்சைக்கொல்லியை செடியின் மீது சீராக தெளிக்கவும்."
+    }
+    return "மண்ணின் மேல் அடுக்கு நன்கு காய்ந்த பிறகு மட்டுமே மிதமாக தண்ணீர் ஊற்றவும். தொட்டியில் தண்ணீர் தேங்காமல் பார்த்துக் கொள்வது வேர் அழுகலைத் தடுக்கும்."
+  }
+
+  // Hindi (हिन्दी)
+  if (lang.startsWith('hi')) {
+    if (q.includes('precaution') || q.includes('prevent') || q.includes('avoid') || q.includes('protect') || q.includes('savdhani')) {
+      return "पौधों को बीमारियों से बचाने के लिए, पत्तियों के ऊपर नहीं बल्कि सीधे जड़ों में पानी दें। पौधों के बीच पर्याप्त हवा का आवागमन रखें और रोगग्रस्त पत्तियों को तुरंत हटा दें।"
+    }
+    if (q.includes('cure') || q.includes('treat') || q.includes('remedy') || q.includes('ilaj') || q.includes('upchar')) {
+      return "संक्रमित पत्तियों को तुरंत काटकर अलग कर दें ताकि बीमारी न फैले। इसके बाद नीम के तेल या कॉपर फंगीसाइड का हल्का छिड़काव पौधों पर करें।"
+    }
+    return "गमले की मिट्टी ऊपर से सूखने पर ही पानी दें। गमले में जल निकासी के छेद खुले रखें ताकि जड़ों में पानी जमा न हो।"
+  }
+
+  // Kannada (ಕನ್ನಡ)
+  if (lang.startsWith('kn')) {
+    if (q.includes('precaution') || q.includes('prevent') || q.includes('avoid') || q.includes('protect') || q.includes('eccharike')) {
+      return "ಗಿಡಗಳಿಗೆ ರೋಗ ಹರಡದಂತೆ ತಡೆಯಲು, ಎಲೆಗಳ ಮೇಲೆ ನೀರು ಹಾಕದೆ ನೇರವಾಗಿ ಬುಡಕ್ಕೆ ಮಾತ್ರ ನೀರು ಹಾಕಿ. ಗಿಡಗಳ ನಡುವೆ ಉತ್ತಮ ಗಾಳಿಯಾಡುವಂತೆ ನೋಡಿಕೊಳ್ಳಿ ಮತ್ತು ಒಣಗಿದ ಎಲೆಗಳನ್ನು ತೆಗೆಯಿರಿ."
+    }
+    if (q.includes('cure') || q.includes('treat') || q.includes('remedy') || q.includes('chikitse')) {
+      return "ರೋಗಪೀಡಿತ ಎಲೆಗಳನ್ನು ಕತ್ತರಿಸಿ ತಕ್ಷಣ ದೂರ ವಿಲೇವಾರಿ ಮಾಡಿ. ನಂತರ ಸಾವಯವ ಬೇವಿನ ಎಣ್ಣೆ ಅಥವಾ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಗಿಡಕ್ಕೆ ಸಿಂಪಡಿಸಿ."
+    }
+    return "ಮಣ್ಣಿನ ಮೇಲ್ಭಾಗ ಒಣಗಿದಾಗ ಮಾತ್ರ ನೀರು ಹಾಕಿ. ಕುಂಡದಲ್ಲಿ ನೀರು ನಿಲ್ಲದಂತೆ ತೂತುಗಳು ಸರಿಯಾಗಿವೆಯೇ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ."
+  }
+
+  // Malayalam (മലയാളം)
+  if (lang.startsWith('ml')) {
+    if (q.includes('precaution') || q.includes('prevent') || q.includes('avoid') || q.includes('protect') || q.includes('jagratha')) {
+      return "ചെടികൾക്ക് രോഗങ്ങൾ വരാതിരിക്കാൻ, ഇലകളിൽ വെള്ളം തളിക്കാതെ വേരുകളിൽ മാത്രം വെള്ളം ഒഴിക്കുക. ചെടികൾക്കിടയിൽ നല്ല വായുസഞ്ചാരം ഉറപ്പാക്കുകയും അസുഖം ബാധിച്ച ഇലകൾ ഉടൻ മാറ്റുകയും ചെയ്യുക."
+    }
+    if (q.includes('cure') || q.includes('treat') || q.includes('remedy') || q.includes('chikitsa')) {
+      return "രോഗം ബാധിച്ച ഇലകൾ മുറിച്ചുമാറ്റി സുരക്ഷിതമായി നശിപ്പിക്കുക. ശേഷം വേപ്പെണ്ണ അല്ലെങ്കിൽ ജൈവ കുമിൾനാശിനി നേർപ്പിച്ച് തളിക്കുക."
+    }
+    return "മണ്ണ് പൂർണ്ണമായും ഉണങ്ങിയ ശേഷം മാത്രം മിതമായി വെള്ളം ഒഴിക്കുക. ചട്ടിയിൽ വെള്ളം കെട്ടിക്കിടക്കാൻ അനുവദിക്കരുത്."
+  }
+
+  // English fallback
   if (q.includes('precaution') || q.includes('prevent') || q.includes('avoid') || q.includes('protect')) {
     if (ctx.includes('snake') || q.includes('sansevieria')) {
       return "For Snake Plants, key precautions include watering strictly at the soil base, allowing the soil to dry completely between waterings, maintaining low ambient humidity, and sterilizing pruning shears to prevent fungal leaf spot."
@@ -388,9 +480,9 @@ class VoiceAssistantService {
 
   /**
    * Ultra-fast, zero-latency speech synthesis (< 0.2s start time).
-   * Uses native browser speech synthesis immediately to avoid cloud delays.
+   * Supports English, Telugu, Tamil, Hindi, Kannada, and Malayalam native voices.
    */
-  public async speakText(text: string): Promise<SpokenDiagnosisResult> {
+  public async speakText(text: string, forcedLang?: string): Promise<SpokenDiagnosisResult> {
     if (this.isMuted) {
       console.log('VoiceBot is muted, skipping playback.')
       return { speechText: text, isDecisionMode: text.includes('decision mode'), source: 'browser-speech' }
@@ -401,7 +493,8 @@ class VoiceAssistantService {
     this.emit()
 
     try {
-      await this.speakBrowserNative(text)
+      const targetLang = forcedLang && forcedLang !== 'auto' ? forcedLang : detectLanguage(text)
+      await this.speakBrowserNative(text, targetLang)
       return {
         speechText: text,
         isDecisionMode: text.includes('decision mode'),
@@ -420,7 +513,7 @@ class VoiceAssistantService {
     }
   }
 
-  private speakBrowserNative(text: string): Promise<void> {
+  private speakBrowserNative(text: string, lang: string = 'en-IN'): Promise<void> {
     return new Promise((resolve) => {
       if (!('speechSynthesis' in window)) {
         this.isSpeaking = false
@@ -431,13 +524,37 @@ class VoiceAssistantService {
 
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
-      utterance.rate = 1.02
+      utterance.lang = lang
+      utterance.rate = 1.0
       utterance.pitch = 1.0
 
       const voices = window.speechSynthesis.getVoices()
-      const preferred = voices.find(
-        (v) => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Jenny')) && v.lang.startsWith('en')
-      )
+      const langPrefix = lang.split('-')[0].toLowerCase()
+
+      // Prioritize natural/neural voices matching the specific language
+      const preferred =
+        voices.find(
+          (v) =>
+            v.lang.toLowerCase().startsWith(langPrefix) &&
+            (v.name.includes('Natural') ||
+              v.name.includes('Neural') ||
+              v.name.includes('Google') ||
+              v.name.includes('India'))
+        ) ||
+        voices.find((v) => v.lang.toLowerCase().startsWith(langPrefix)) ||
+        (langPrefix === 'en'
+          ? voices.find(
+              (v) =>
+                (v.name.includes('Google') ||
+                  v.name.includes('Natural') ||
+                  v.name.includes('Samantha') ||
+                  v.name.includes('Jenny') ||
+                  v.name.includes('Ravi') ||
+                  v.name.includes('Heera')) &&
+                v.lang.startsWith('en')
+            )
+          : null)
+
       if (preferred) utterance.voice = preferred
 
       utterance.onstart = () => {
@@ -463,23 +580,27 @@ class VoiceAssistantService {
 
   /**
    * Conversational LLM Q&A using Gemini 2.5 Flash grounded in botanical guidance.
-   * Delivers focused, authoritative plant pathology and care responses.
+   * Delivers warm, human-like, multilingual and code-switching plant care responses.
    */
   public async askAssistant(
     question: string,
     currentDiagnosisContext?: string,
-    history: Array<{ role: string; text: string }> = []
+    history: Array<{ role: string; text: string }> = [],
+    preferredLang: string = 'auto'
   ): Promise<string> {
     const prompt = `
-Role: You are a formal botanical specialist and voice assistant.
-Task: Answer user queries strictly regarding plants, foliage, horticulture, and plant pathology in a formal, one-to-one conversational style.
+Role: You are a warm, human-like botanical expert and conversational multilingual voice assistant.
+Languages Supported: English, Telugu (తెలుగు), Tamil (தமிழ்), Hindi (हिन्दी), Kannada (ಕನ್ನಡ), Malayalam (മലയാളം).
+Selected Language Mode: ${preferredLang}
 
 Directives:
-1. Formal One-to-One Tone: Address the user directly with courteous, professional phrasing (e.g., "Regarding your inquiry...", "I advise that...").
-2. Plant-Only Scope: Discuss exclusively plants, leaves, botany, and cultivation. If the user asks about an unrelated topic, respond solely with: "I am designated exclusively to assist with botanical and plant-related topics. Please let me know if you have an inquiry regarding plants, foliage, or crop care."
+1. Warm, Empathetic Human Tone: Sound like a passionate, friendly plant doctor and caring gardener speaking one-to-one with a person. Never sound robotic or declare "As an AI". Avoid bullet points, numbered lists, asterisks, or markdown symbols.
+2. Code-Switching & Dialect Fluency:
+   - Seamlessly comprehend code-switching and mixed languages (e.g., Telugu mixed with English like "Snake plant ki water eppudu veyyali?", Hinglish like "Is plant me yellow leaves aa rahe hain, kya karu?", Tanglish, Kanglish, Manglish).
+   - Reply in the user's spoken language or natural conversational code-mixed blend. If the user asks in Telugu, respond in warm, natural Telugu; if in Hindi, respond in fluent Hindi; similarly for Tamil, Kannada, Malayalam, and English.
+   - If a specific language is selected (${preferredLang} !== 'auto'), respond in that language.
 3. Conversational Continuity: Maintain context from prior turns in the conversation to resolve pronouns and references.
-4. No Unfounded Assumptions: Do not assume or invent facts beyond what the user has stated.
-5. Voice Synthesis Ready: Provide plain text only without markdown formatting (no asterisks, headings, bullet marks, or emojis) so the output sounds natural and articulate when read by a voice synthesizer. Deliver your answer in 2 to 4 concise sentences.
+4. Voice Synthesis Ready: Provide plain conversational text only without markdown formatting, ready to be read aloud in 2 to 3 fluid, melodious sentences.
 `
 
     const historyStr =
@@ -499,6 +620,7 @@ Directives:
             prompt: question,
             plant_context: currentDiagnosisContext,
             history: history.slice(-6),
+            selected_lang: preferredLang,
           }),
         })
         if (resp.ok) {
@@ -540,10 +662,10 @@ Directives:
         }
       }
 
-      return getBotanicalFallback(question, currentDiagnosisContext, history)
+      return getBotanicalFallback(question, currentDiagnosisContext, history, preferredLang)
     } catch (err: any) {
       console.error('AskAssistant error:', err)
-      return getBotanicalFallback(question, currentDiagnosisContext, history)
+      return getBotanicalFallback(question, currentDiagnosisContext, history, preferredLang)
     }
   }
 }

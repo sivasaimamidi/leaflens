@@ -8,6 +8,7 @@ import {
   getSupportedPlantsButtonContent,
   getAvailablePlansButtonContent,
   getPrivacyButtonContent,
+  SUPPORTED_LANGUAGES,
 } from '../services/voiceAssistant'
 
 interface VoiceBotProps {
@@ -15,6 +16,10 @@ interface VoiceBotProps {
 }
 
 export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
+  // Multilingual Support: auto, en-IN, te-IN, ta-IN, hi-IN, kn-IN, ml-IN
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
+    return localStorage.getItem('leaflens_voice_lang') || 'auto'
+  })
   // On/Off Toggle defaults to ON (true)
   const [isVoiceOn, setIsVoiceOn] = useState<boolean>(() => {
     const saved = localStorage.getItem('leaflens_voice_on')
@@ -162,6 +167,20 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
   }
 
   // Freeform custom question input with conversation history memory
+  const handleSelectLanguage = (code: string) => {
+    setSelectedLanguage(code)
+    localStorage.setItem('leaflens_voice_lang', code)
+    if (isAiVoiceModeActiveRef.current) {
+      if (aiVoiceRecognitionRef.current) {
+        try {
+          aiVoiceRecognitionRef.current.abort()
+        } catch (_) {}
+      }
+      startAiVoiceListening(code)
+    }
+  }
+
+  // Freeform custom question input with conversation history memory & multilingual support
   const handleAskAssistant = async (queryToAsk?: string) => {
     const q = (queryToAsk || userQuery).trim()
     if (!q || isAnswering) return
@@ -175,7 +194,12 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       : 'No leaf photo currently scanned.'
 
     try {
-      const reply = await voiceAssistant.askAssistant(q, contextStr, conversationHistoryRef.current)
+      const reply = await voiceAssistant.askAssistant(
+        q,
+        contextStr,
+        conversationHistoryRef.current,
+        selectedLanguage
+      )
       setAssistantReply(reply)
 
       const updatedHistory = [
@@ -186,7 +210,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       conversationHistoryRef.current = updatedHistory
       setConversationHistory(updatedHistory)
 
-      voiceAssistant.speakText(reply)
+      voiceAssistant.speakText(reply, selectedLanguage)
     } catch (err) {
       console.error('Error asking assistant:', err)
     } finally {
@@ -222,7 +246,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       const recognition = new SpeechRecognition()
       recognition.continuous = true
       recognition.interimResults = true
-      recognition.lang = 'en-US'
+      recognition.lang = selectedLanguage === 'auto' ? 'en-IN' : selectedLanguage
       recognition.maxAlternatives = 1
 
       recognition.onstart = () => {
@@ -259,7 +283,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     }
   }
 
-  // 1-to-1 AI Voice Interaction handler: continuous microphone, zero preliminary flutter, memory retention
+  // 1-to-1 AI Voice Interaction handler: continuous microphone, zero preliminary flutter, multilingual memory retention
   const handleToggleAiVoice = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -286,7 +310,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     startAiVoiceListening()
   }
 
-  const startAiVoiceListening = () => {
+  const startAiVoiceListening = (langCodeOverride?: string) => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
 
@@ -303,7 +327,8 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       const recognition = new SpeechRecognition()
       recognition.continuous = true
       recognition.interimResults = true
-      recognition.lang = 'en-US'
+      const activeLang = langCodeOverride || selectedLanguage
+      recognition.lang = activeLang === 'auto' ? 'en-IN' : activeLang
       recognition.maxAlternatives = 1
 
       accumulatedSpeechRef.current = ''
@@ -383,7 +408,8 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       const answer = await voiceAssistant.askAssistant(
         spokenQuestion,
         contextStr,
-        conversationHistoryRef.current
+        conversationHistoryRef.current,
+        selectedLanguage
       )
 
       // Deliver single final answer directly with ZERO preliminary flutter
@@ -398,8 +424,8 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       conversationHistoryRef.current = updatedHistory
       setConversationHistory(updatedHistory)
 
-      // Deliver answer aloud
-      await voiceAssistant.speakText(answer)
+      // Deliver answer aloud in selected language native voice
+      await voiceAssistant.speakText(answer, selectedLanguage)
 
       // Maintain conversational continuity: keep microphone open for next user question
       if (isAiVoiceModeActiveRef.current) {
@@ -553,8 +579,24 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
         </div>
       )}
 
-      {/* 6. Five Distinct Buttons with Instant (< 0.2s) Execution */}
+      {/* 6. Multilingual Language Selector & Five Distinct Action Buttons */}
       <div className="voice-qa-section">
+        {/* Language Selection Bar */}
+        <div className="voice-lang-bar" role="radiogroup" aria-label="Select voicebot language">
+          <span className="voice-lang-label">Lang:</span>
+          {SUPPORTED_LANGUAGES.map((item) => (
+            <button
+              key={item.code}
+              type="button"
+              className={`voice-lang-pill ${selectedLanguage === item.code ? 'active' : ''}`}
+              onClick={() => handleSelectLanguage(item.code)}
+              title={item.name}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
         <div className="voice-qa-chips">
           {/* Button 1: Precautions (Condition & Prevention) */}
           <button

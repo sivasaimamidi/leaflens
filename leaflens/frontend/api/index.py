@@ -356,13 +356,45 @@ class AssistantPayload(BaseModel):
     prompt: str
     plant_context: Optional[str] = None
     history: Optional[List[Dict[str, str]]] = None
+    selected_lang: Optional[str] = None
 
 
-def get_botanical_fallback(query: str, plant_context: Optional[str] = None, history: Optional[List[Dict[str, str]]] = None) -> str:
+def detect_query_language(text: str, default_lang: str = "en-IN") -> str:
+    # Native script detection
+    for ch in text:
+        code = ord(ch)
+        if 0x0C00 <= code <= 0x0C7F:
+            return "te-IN"  # Telugu
+        if 0x0B80 <= code <= 0x0BFF:
+            return "ta-IN"  # Tamil
+        if 0x0900 <= code <= 0x097F:
+            return "hi-IN"  # Hindi / Devanagari
+        if 0x0C80 <= code <= 0x0CFF:
+            return "kn-IN"  # Kannada
+        if 0x0D00 <= code <= 0x0D7F:
+            return "ml-IN"  # Malayalam
+
+    # Romanized code-switching detection
+    q = text.lower()
+    if any(k in q for k in ["eppudu", "veyyali", "cheyyali", "neellu", "aakulu", "ela", "enti", "rogalu"]):
+        return "te-IN"
+    if any(k in q for k in ["kaise", "paani", "patti", "dekhbhal", "bataiye", "chahiye", "karna", "bimari"]):
+        return "hi-IN"
+    if any(k in q for k in ["eppo", "thanni", "oothanum", "pannanum", "ilaigal", "solla", "noi", "marundhu"]):
+        return "ta-IN"
+    if any(k in q for k in ["yavaga", "haakbeku", "neeru", "yele", "maadbeku", "hege", "roga", "kannada"]):
+        return "kn-IN"
+    if any(k in q for k in ["eppozhaanu", "vellam", "ozhikkendathu", "cheyyendathu", "ila", "engane", "rogam"]):
+        return "ml-IN"
+
+    return default_lang
+
+
+def get_botanical_fallback(query: str, plant_context: Optional[str] = None, history: Optional[List[Dict[str, str]]] = None, lang_hint: Optional[str] = None) -> str:
+    lang = lang_hint if lang_hint and lang_hint != "auto" else detect_query_language(query)
     q = query.lower()
     ctx = (plant_context or "").lower()
-    
-    # Check history if current query lacks context
+
     if history:
         for item in reversed(history):
             prev = item.get("text", "").lower()
@@ -375,6 +407,47 @@ def get_botanical_fallback(query: str, plant_context: Optional[str] = None, hist
             elif "pepper" in prev:
                 ctx += " pepper"
 
+    # Telugu responses (తెలుగు)
+    if lang.startswith("te"):
+        if "precaution" in q or "prevent" in q or "avoid" in q or "protect" in q or "jakratha" in q:
+            return "మొక్కలకు వ్యాధులు సోకకుండా ఉండటానికి, నీటిని ఆకులపై కాకుండా వేర్ల వద్ద మాత్రమే పోయండి. మొక్కల మధ్య మంచి గాలి ప్రసరణ ఉండేలా చూసుకోండి మరియు ఎండిన ఆకులను క్రమం తప్పకుండా తొలగించండి."
+        if "cure" in q or "treat" in q or "remedy" in q or "nayam" in q or "mandhu" in q:
+            return "తెగులు సోకిన ఆకులను వెంటనే తొలగించి దూరంగా పారవేయండి. సమస్య మరింత వ్యాపించకుండా వేప నూనె లేదా కాపర్ ఆధారిత స్ప్రేను తగిన మోతాదులో పిచికారీ చేయండి."
+        return "మొక్క మొదట్లోని మట్టి పూర్తిగా ఆరిపోయినప్పుడు మాత్రమే నీరు పెట్టండి. కుండీలో అదనపు నీరు నిల్వ ఉండకుండా డ్రైనేజీ రంధ్రాలు సరిగ్గా ఉన్నాయో లేదో నిర్ధారించుకోండి."
+
+    # Tamil responses (தமிழ்)
+    if lang.startswith("ta"):
+        if "precaution" in q or "prevent" in q or "avoid" in q or "protect" in q or "kaapatha" in q:
+            return "செடிகளுக்கு நோய் பரவாமல் தடுக்க, இலைகளின் மேல் தண்ணீர் தெளிக்காமல் வேர்ப்பகுதியில் மட்டுமே ஊற்றவும். செடிகளுக்கு இடையே நல்ல காற்றோட்டம் இருப்பதை உறுதி செய்து, பாதிக்கப்பட்ட இலைகளை உடனே அகற்றி விடுங்கள்."
+        if "cure" in q or "treat" in q or "remedy" in q or "marundhu" in q:
+            return "நோய் தாக்கப்பட்ட இலைகளை வெட்டி அகற்றி பாதுகாப்பாக அப்புறப்படுத்துங்கள். பிறகு வேப்ப எண்ணெய் அல்லது இயற்கை பூஞ்சைக்கொல்லியை செடியின் மீது சீராக தெளிக்கவும்."
+        return "மண்ணின் மேல் அடுக்கு நன்கு காய்ந்த பிறகு மட்டுமே மிதமாக தண்ணீர் ஊற்றவும். தொட்டியில் தண்ணீர் தேங்காமல் பார்த்துக் கொள்வது வேர் அழுகலைத் தடுக்கும்."
+
+    # Hindi responses (हिन्दी)
+    if lang.startswith("hi"):
+        if "precaution" in q or "prevent" in q or "avoid" in q or "protect" in q or "savdhani" in q:
+            return "पौधों को बीमारियों से बचाने के लिए, पत्तियों के ऊपर नहीं बल्कि सीधे जड़ों में पानी दें। पौधों के बीच पर्याप्त हवा का आवागमन रखें और रोगग्रस्त पत्तियों को तुरंत हटा दें।"
+        if "cure" in q or "treat" in q or "remedy" in q or "ilaj" in q or "upchar" in q:
+            return "संक्रमित पत्तियों को तुरंत काटकर अलग कर दें ताकि बीमारी न फैले। इसके बाद नीम के तेल या कॉपर फंगीसाइड का हल्का छिड़काव पौधों पर करें।"
+        return "गमले की मिट्टी ऊपर से सूखने पर ही पानी दें। गमले में जल निकासी के छेद खुले रखें ताकि जड़ों में पानी जमा न हो।"
+
+    # Kannada responses (ಕನ್ನಡ)
+    if lang.startswith("kn"):
+        if "precaution" in q or "prevent" in q or "avoid" in q or "protect" in q or "eccharike" in q:
+            return "ಗಿಡಗಳಿಗೆ ರೋಗ ಹರಡದಂತೆ ತಡೆಯಲು, ಎಲೆಗಳ ಮೇಲೆ ನೀರು ಹಾಕದೆ ನೇರವಾಗಿ ಬುಡಕ್ಕೆ ಮಾತ್ರ ನೀರು ಹಾಕಿ. ಗಿಡಗಳ ನಡುವೆ ಉತ್ತಮ ಗಾಳಿಯಾಡುವಂತೆ ನೋಡಿಕೊಳ್ಳಿ ಮತ್ತು ಒಣಗಿದ ಎಲೆಗಳನ್ನು ತೆಗೆಯಿರಿ."
+        if "cure" in q or "treat" in q or "remedy" in q or "chikitse" in q:
+            return "ರೋಗಪೀಡಿತ ಎಲೆಗಳನ್ನು ಕತ್ತರಿಸಿ ತಕ್ಷಣ ದೂರ ವಿಲೇವಾರಿ ಮಾಡಿ. ನಂತರ ಸಾವಯವ ಬೇವಿನ ಎಣ್ಣೆ ಅಥವಾ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಗಿಡಕ್ಕೆ ಸಿಂಪಡಿಸಿ."
+        return "ಮಣ್ಣಿನ ಮೇಲ್ಭಾಗ ಒಣಗಿದಾಗ ಮಾತ್ರ ನೀರು ಹಾಕಿ. ಕುಂಡದಲ್ಲಿ ನೀರು ನಿಲ್ಲದಂತೆ ತೂತುಗಳು ಸರಿಯಾಗಿವೆಯೇ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ."
+
+    # Malayalam responses (മലയാളം)
+    if lang.startswith("ml"):
+        if "precaution" in q or "prevent" in q or "avoid" in q or "protect" in q or "jagratha" in q:
+            return "ചെടികൾക്ക് രോഗങ്ങൾ വരാതിരിക്കാൻ, ഇലകളിൽ വെള്ളം തളിക്കാതെ വേരുകളിൽ മാത്രം വെള്ളം ഒഴിക്കുക. ചെടികൾക്കിടയിൽ നല്ല വായുസഞ്ചാരം ഉറപ്പാക്കുകയും അസുഖം ബാധിച്ച ഇലകൾ ഉടൻ മാറ്റുകയും ചെയ്യുക."
+        if "cure" in q or "treat" in q or "remedy" in q or "chikitsa" in q:
+            return "രോഗം ബാധിച്ച ഇലകൾ മുറിച്ചുമാറ്റി സുരക്ഷിതമായി നശിപ്പിക്കുക. ശേഷം വേപ്പെണ്ണ അല്ലെങ്കിൽ ജൈവ കുമിൾനാശിനി നേർപ്പിച്ച് തളിക്കുക."
+        return "മണ്ണ് പൂർണ്ണമായും ഉണങ്ങിയ ശേഷം മാത്രം മിതമായി വെള്ളം ഒഴിക്കുക. ചട്ടിയിൽ വെള്ളം കെട്ടിക്കിടക്കാൻ അനുവദിക്കരുത്."
+
+    # English / Default responses
     if "precaution" in q or "prevent" in q or "avoid" in q or "protect" in q:
         if "snake" in ctx or "sansevieria" in q:
             return "For Snake Plants, key precautions include watering strictly at the soil base, allowing the soil to dry completely between waterings, maintaining low ambient humidity, and sterilizing pruning shears to prevent fungal leaf spot."
@@ -398,30 +471,31 @@ def get_botanical_fallback(query: str, plant_context: Optional[str] = None, hist
 @app.post("/assistant")
 def chat_assistant(payload: AssistantPayload):
     """
-    Conversational Plant Pathology Voice Assistant grounded in botanical guidance.
-    Powered by Gemini 2.5 Flash with full conversation history and intelligent fallback.
+    Conversational Multilingual Plant Pathology Voice Assistant grounded in botanical guidance.
+    Powered by Gemini 2.5 Flash supporting Tamil, Telugu, Hindi, Kannada, Malayalam, English,
+    with native code-switching comprehension and natural human cadence.
     """
     query_text = payload.prompt.strip()
 
     if not GEMINI_API_KEY:
         return {
-            "reply": get_botanical_fallback(query_text, payload.plant_context, payload.history),
-            "model": "offline-botanical-engine"
+            "reply": get_botanical_fallback(query_text, payload.plant_context, payload.history, payload.selected_lang),
+            "model": "offline-multilingual-botanical-engine"
         }
 
     system_knowledge = (
-        "You are a formal botanical specialist and voice assistant. "
-        "Answer user queries strictly regarding plants, foliage, horticulture, and plant pathology in a formal, one-to-one conversational style. "
-        "Speak directly to the user in a professional, courteous manner. "
-        "Maintain conversational continuity by referencing prior context when appropriate. "
-        "Discuss exclusively plants, leaves, and related botanical topics. If the query is unrelated to plants or their parts, respond solely with: "
-        "'I am designated exclusively to assist with botanical and plant-related topics. Please let me know if you have an inquiry regarding plants, foliage, or crop care.' "
-        "Do not assume or extrapolate new information beyond what the user has provided. "
-        "Do not mention any brand names or application names unless asked. "
-        "Provide plain text responses without markdown formatting or bullet points, suitable for voice synthesis, in 2 to 4 concise sentences."
+        "You are a warm, human-like botanical expert and conversational multilingual voice assistant. "
+        "Supported Languages: English, Telugu (తెలుగు), Tamil (தமிழ்), Hindi (हिन्दी), Kannada (ಕನ್ನಡ), Malayalam (മലയാളം). "
+        "Tone and Demeanor: Sound like an empathetic, friendly, and knowledgeable local plant doctor or gardener speaking one-to-one with a person. "
+        "Never sound robotic, artificial, or declare 'As an AI'. Avoid bullet points, asterisks, hashtags, or markdown symbols. "
+        "Code-Switching & Dialect Handling: Accurately understand code-mixed speech (e.g. Telugu+English, Hinglish, Tanglish, Kanglish, Manglish). "
+        "Respond naturally in the user's chosen or spoken language with fluid conversational warmth. "
+        "If the user asks in Telugu or Tenglish, reply in natural Telugu; if in Hindi or Hinglish, reply in conversational Hindi; similarly for Tamil, Kannada, Malayalam, and English. "
+        "Deliver concise, articulate answers in 2 to 3 fluid sentences ready for voice synthesis."
     )
 
     context_info = f"Current Plant Context: {payload.plant_context}\n" if payload.plant_context else ""
+    lang_info = f"User Selected Language: {payload.selected_lang}\n" if payload.selected_lang else ""
     
     history_str = ""
     if payload.history:
@@ -429,7 +503,7 @@ def chat_assistant(payload: AssistantPayload):
         if history_lines:
             history_str = "Prior Conversation History:\n" + "\n".join(history_lines) + "\n\n"
 
-    combined_input = f"{system_knowledge}\n{context_info}{history_str}User Query: {query_text}"
+    combined_input = f"{system_knowledge}\n{lang_info}{context_info}{history_str}User Query: {query_text}"
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     req_body = {
