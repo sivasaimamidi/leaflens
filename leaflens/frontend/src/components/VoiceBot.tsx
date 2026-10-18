@@ -70,7 +70,9 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
   }, [])
 
   const selectedLanguageRef = useRef<string>(selectedLanguage)
-  selectedLanguageRef.current = selectedLanguage
+  useEffect(() => {
+    selectedLanguageRef.current = selectedLanguage
+  }, [selectedLanguage])
 
   // Auto-trigger spoken diagnosis when a new scan result is produced
   useEffect(() => {

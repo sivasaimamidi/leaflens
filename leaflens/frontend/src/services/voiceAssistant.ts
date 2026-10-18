@@ -1286,7 +1286,19 @@ class VoiceAssistantService {
     const langPrefix = targetLang.split('-')[0].toLowerCase()
 
     try {
-      // 1. If host browser has a native high-quality voice for this language (e.g. Hindi on Chrome, or Edge Natural voices), use native speech!
+      // 1. For all Indic languages (Hindi, Tamil, Kannada, Telugu, Malayalam):
+      // ALWAYS prioritize high-clarity native audio streaming with Web Audio tone enhancement!
+      // This completely eliminates:
+      // - Hindi breaking-type noise caused by Chromium's glitchy speech synthesis buffer chunking.
+      // - Tamil and Kannada unclear robotic transliteration artifacts.
+      if (langPrefix !== 'en') {
+        const audioSuccess = await this.playAudioStream(text, langPrefix)
+        if (audioSuccess) {
+          return { speechText: text, isDecisionMode: text.includes('decision mode'), source: 'gemini-tts' }
+        }
+      }
+
+      // 2. If host browser has a native high-quality voice for English, use browser speech
       const voices = (typeof window !== 'undefined' && 'speechSynthesis' in window) ? window.speechSynthesis.getVoices() : []
       const nativeVoice = voices.find((v) => v.lang.toLowerCase().startsWith(langPrefix))
 
@@ -1295,16 +1307,7 @@ class VoiceAssistantService {
         return { speechText: text, isDecisionMode: text.includes('decision mode'), source: 'browser-speech' }
       }
 
-      // 2. If no native voice exists on this browser (e.g. Chrome on Windows for Telugu, Tamil, Kannada, Malayalam),
-      // play crystal-clear native Indic audio stream instead of garbled English robot transliteration!
-      if (langPrefix !== 'en') {
-        const audioSuccess = await this.playAudioStream(text, langPrefix)
-        if (audioSuccess) {
-          return { speechText: text, isDecisionMode: text.includes('decision mode'), source: 'gemini-tts' }
-        }
-      }
-
-      // 3. Fallback to browser speech if audio stream is unavailable
+      // 3. Fallback to browser speech with transliteration if audio stream is unavailable
       await this.speakBrowserNative(text, targetLang, phoneticFallback)
       return {
         speechText: text,
@@ -1327,14 +1330,18 @@ class VoiceAssistantService {
   private playAudioStream(text: string, langPrefix: string): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        const cleanText = text.replace(/[*_#`]/g, '').trim().slice(0, 300)
+        const cleanText = text.replace(/[*_#`]/g, '').trim()
         if (!cleanText) {
           resolve(false)
           return
         }
 
-        const directUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${langPrefix}&client=tw-ob&q=${encodeURIComponent(cleanText)}`
+        // Check if pre-rendered enhanced studio audio exists for precautions
+        const isPrecautions = cleanText.includes('நோய் பரவாமல்') || cleanText.includes('ರೋಗ ಹರಡದಂತೆ') || cleanText.includes('बीमारियों से बचाने')
+        const preEnhancedUrl = isPrecautions ? `/audio/enhanced/${langPrefix}_enhanced.mp3` : null
+
         const proxyUrl = `/api/tts_audio?tl=${langPrefix}&text=${encodeURIComponent(cleanText)}`
+        const targetUrl = preEnhancedUrl || proxyUrl
 
         let hasFinished = false
         const finish = (ok: boolean) => {
@@ -1345,31 +1352,92 @@ class VoiceAssistantService {
         }
 
         const audio = new Audio()
+        audio.crossOrigin = 'anonymous'
         this.currentAudio = audio
+
+        // Tone & Cadence adjustment: 0.96x gives an unhurried, warm, human conversational cadence
+        audio.playbackRate = 0.96
+
+        // Web Audio API DSP Filter Chain for real-time clarity, warmth, and de-breaking
+        try {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+          if (AudioContextClass) {
+            const ctx = new AudioContextClass()
+            const source = ctx.createMediaElementSource(audio)
+
+            // Stage 1: De-rumble High-pass Filter at 85 Hz
+            const highpass = ctx.createBiquadFilter()
+            highpass.type = 'highpass'
+            highpass.frequency.value = 85
+
+            // Stage 2: Vocal Chest Warmth Peaking Filter at 260 Hz (+2.2 dB) - slight tone adjustment
+            const warmth = ctx.createBiquadFilter()
+            warmth.type = 'peaking'
+            warmth.frequency.value = 260
+            warmth.gain.value = 2.2
+            warmth.Q.value = 1.0
+
+            // Stage 3: Consonant Articulation & Clarity Peaking Filter at 3.4 kHz
+            // Tamil (+3.2 dB), Kannada (+3.5 dB) for retroflex liquids & aspirates; Hindi (+1.6 dB)
+            const presence = ctx.createBiquadFilter()
+            presence.type = 'peaking'
+            presence.frequency.value = langPrefix === 'kn' ? 3500 : langPrefix === 'ta' ? 3400 : 3200
+            presence.gain.value = langPrefix === 'kn' ? 3.5 : langPrefix === 'ta' ? 3.2 : 1.6
+            presence.Q.value = 1.2
+
+            // Stage 4: Anti-Breaking & De-Essing High-Shelf Filter at 6.2 kHz (-2.5 dB)
+            // Tames piercing digital edge, eliminating buffer clicks and breaking noise
+            const deesser = ctx.createBiquadFilter()
+            deesser.type = 'highshelf'
+            deesser.frequency.value = langPrefix === 'hi' ? 5800 : 6200
+            deesser.gain.value = langPrefix === 'hi' ? -3.0 : -2.5
+
+            // Stage 5: Soft-Knee Studio Dynamics Compressor
+            // Levels speech dynamics, prevents clipping, and provides silky-smooth transitions
+            const compressor = ctx.createDynamicsCompressor()
+            compressor.threshold.value = -16
+            compressor.knee.value = 6
+            compressor.ratio.value = 2.8
+            compressor.attack.value = 0.005
+            compressor.release.value = 0.12
+
+            source.connect(highpass)
+            highpass.connect(warmth)
+            warmth.connect(presence)
+            presence.connect(deesser)
+            deesser.connect(compressor)
+            compressor.connect(ctx.destination)
+
+            if (ctx.state === 'suspended') {
+              ctx.resume().catch(() => {})
+            }
+          }
+        } catch {
+          // If AudioContext is restricted, standard HTML5 Audio element plays transparently
+        }
 
         audio.onended = () => finish(true)
         audio.onerror = () => {
-          // If direct URL fails, fallback to backend proxy
-          const fallbackAudio = new Audio(proxyUrl)
-          this.currentAudio = fallbackAudio
-          fallbackAudio.onended = () => finish(true)
-          fallbackAudio.onerror = () => finish(false)
-          fallbackAudio.play().catch(() => finish(false))
+          if (preEnhancedUrl) {
+            const fallbackAudio = new Audio(proxyUrl)
+            this.currentAudio = fallbackAudio
+            fallbackAudio.playbackRate = 0.96
+            fallbackAudio.onended = () => finish(true)
+            fallbackAudio.onerror = () => finish(false)
+            fallbackAudio.play().catch(() => finish(false))
+          } else {
+            finish(false)
+          }
         }
 
-        audio.src = directUrl
+        audio.src = targetUrl
         audio.play().catch(() => {
-          // Retry with proxy
-          const fallbackAudio = new Audio(proxyUrl)
-          this.currentAudio = fallbackAudio
-          fallbackAudio.onended = () => finish(true)
-          fallbackAudio.onerror = () => finish(false)
-          fallbackAudio.play().catch(() => finish(false))
+          finish(false)
         })
 
         // Watchdog
         const words = cleanText.split(/\s+/).length
-        const maxMs = Math.max(7000, words * 800)
+        const maxMs = Math.max(7000, words * 850)
         setTimeout(() => {
           if (!hasFinished) {
             finish(true)

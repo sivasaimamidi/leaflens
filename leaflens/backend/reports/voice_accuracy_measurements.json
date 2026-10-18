@@ -1,0 +1,197 @@
+{
+  "metadata": {
+    "title": "Voice Clarity and Tone Enhancement Benchmark",
+    "iterations": 4,
+    "target_languages": [
+      "ta",
+      "kn",
+      "hi"
+    ]
+  },
+  "runs": [
+    {
+      "run_id": 1,
+      "name": "Run 1: Baseline Raw Audio",
+      "description": "Unprocessed baseline TTS stream with native default browser/proxy settings.",
+      "results": {
+        "ta": {
+          "language": "Tamil",
+          "native_name": "தமிழ்",
+          "metrics": {
+            "snr_db": 57.97,
+            "clarity_pct": 69.34,
+            "intelligibility_pct": 99.6,
+            "breaking_rate_pct": 0.021,
+            "mos_score": 4.92,
+            "tone_warmth_db": 3.31,
+            "crest_factor_db": 12.08
+          }
+        },
+        "kn": {
+          "language": "Kannada",
+          "native_name": "ಕನ್ನಡ",
+          "metrics": {
+            "snr_db": 44.08,
+            "clarity_pct": 69.56,
+            "intelligibility_pct": 99.6,
+            "breaking_rate_pct": 0.0,
+            "mos_score": 4.92,
+            "tone_warmth_db": 2.86,
+            "crest_factor_db": 12.15
+          }
+        },
+        "hi": {
+          "language": "Hindi",
+          "native_name": "हिन्दी",
+          "metrics": {
+            "snr_db": 53.86,
+            "clarity_pct": 69.42,
+            "intelligibility_pct": 99.47,
+            "breaking_rate_pct": 0.245,
+            "mos_score": 4.92,
+            "tone_warmth_db": 2.8,
+            "crest_factor_db": 14.01
+          }
+        }
+      }
+    },
+    {
+      "run_id": 2,
+      "name": "Run 2: Pitch & Tone Cadence Adjustment",
+      "description": "Slight tone adjustment (0.96x cadence, vocal warmth tuning).",
+      "results": {
+        "ta": {
+          "language": "Tamil",
+          "native_name": "தமிழ்",
+          "metrics": {
+            "snr_db": 58.92,
+            "clarity_pct": 69.31,
+            "intelligibility_pct": 99.6,
+            "breaking_rate_pct": 0.021,
+            "mos_score": 4.92,
+            "tone_warmth_db": 3.36,
+            "crest_factor_db": 12.0
+          }
+        },
+        "kn": {
+          "language": "Kannada",
+          "native_name": "ಕನ್ನಡ",
+          "metrics": {
+            "snr_db": 44.39,
+            "clarity_pct": 69.49,
+            "intelligibility_pct": 99.6,
+            "breaking_rate_pct": 0.0,
+            "mos_score": 4.92,
+            "tone_warmth_db": 2.95,
+            "crest_factor_db": 11.96
+          }
+        },
+        "hi": {
+          "language": "Hindi",
+          "native_name": "हिन्दी",
+          "metrics": {
+            "snr_db": 54.43,
+            "clarity_pct": 69.39,
+            "intelligibility_pct": 99.47,
+            "breaking_rate_pct": 0.242,
+            "mos_score": 4.92,
+            "tone_warmth_db": 2.88,
+            "crest_factor_db": 13.69
+          }
+        }
+      }
+    },
+    {
+      "run_id": 3,
+      "name": "Run 3: Dual-Stage Clarity & De-Rumble Filtering",
+      "description": "85Hz High-pass de-rumble + Language-specific consonant presence peak EQ.",
+      "results": {
+        "ta": {
+          "language": "Tamil",
+          "native_name": "தமிழ்",
+          "metrics": {
+            "snr_db": 62.07,
+            "clarity_pct": 69.41,
+            "intelligibility_pct": 99.6,
+            "breaking_rate_pct": 0.026,
+            "mos_score": 4.92,
+            "tone_warmth_db": 3.3,
+            "crest_factor_db": 11.74
+          }
+        },
+        "kn": {
+          "language": "Kannada",
+          "native_name": "ಕನ್ನಡ",
+          "metrics": {
+            "snr_db": 45.09,
+            "clarity_pct": 69.8,
+            "intelligibility_pct": 99.6,
+            "breaking_rate_pct": 0.0,
+            "mos_score": 4.92,
+            "tone_warmth_db": 2.84,
+            "crest_factor_db": 13.47
+          }
+        },
+        "hi": {
+          "language": "Hindi",
+          "native_name": "हिन्दी",
+          "metrics": {
+            "snr_db": 56.91,
+            "clarity_pct": 69.46,
+            "intelligibility_pct": 99.47,
+            "breaking_rate_pct": 0.253,
+            "mos_score": 4.92,
+            "tone_warmth_db": 2.79,
+            "crest_factor_db": 14.85
+          }
+        }
+      }
+    },
+    {
+      "run_id": 4,
+      "name": "Run 4: Full Multi-Stage Studio Master",
+      "description": "Complete DSP chain: High-pass + Warmth boost + Consonant definition + High-shelf de-esser + Soft-knee dynamics compressor.",
+      "results": {
+        "ta": {
+          "language": "Tamil",
+          "native_name": "தமிழ்",
+          "metrics": {
+            "snr_db": 62.77,
+            "clarity_pct": 69.36,
+            "intelligibility_pct": 99.6,
+            "breaking_rate_pct": 0.005,
+            "mos_score": 4.92,
+            "tone_warmth_db": 3.36,
+            "crest_factor_db": 11.66
+          }
+        },
+        "kn": {
+          "language": "Kannada",
+          "native_name": "ಕನ್ನಡ",
+          "metrics": {
+            "snr_db": 44.03,
+            "clarity_pct": 69.62,
+            "intelligibility_pct": 99.6,
+            "breaking_rate_pct": 0.0,
+            "mos_score": 4.92,
+            "tone_warmth_db": 3.0,
+            "crest_factor_db": 12.62
+          }
+        },
+        "hi": {
+          "language": "Hindi",
+          "native_name": "हिन्दी",
+          "metrics": {
+            "snr_db": 55.35,
+            "clarity_pct": 69.42,
+            "intelligibility_pct": 99.6,
+            "breaking_rate_pct": 0.076,
+            "mos_score": 4.92,
+            "tone_warmth_db": 2.87,
+            "crest_factor_db": 13.95
+          }
+        }
+      }
+    }
+  ]
+}
