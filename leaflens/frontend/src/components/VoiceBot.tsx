@@ -36,6 +36,11 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
   const [isListening, setIsListening] = useState<boolean>(false)
   const recognitionRef = useRef<any>(null)
 
+  // Dedicated 1-to-1 AI Voice Interaction state
+  const [isAiVoiceListening, setIsAiVoiceListening] = useState<boolean>(false)
+  const [isAiVoiceProcessing, setIsAiVoiceProcessing] = useState<boolean>(false)
+  const aiVoiceRecognitionRef = useRef<any>(null)
+
   // Last spoken diagnosis hash to prevent duplicate auto-trigger on re-renders
   const lastSpokenKeyRef = useRef<string>('')
 
@@ -235,6 +240,90 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     } catch (e) {
       console.warn('Speech recognition failed to start:', e)
       setIsListening(false)
+    }
+  }
+
+  // 1-to-1 AI Voice Interaction handler: captures speech, asks AI, and speaks response aloud
+  const handleToggleAiVoice = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.')
+      return
+    }
+
+    if (isAiVoiceListening && aiVoiceRecognitionRef.current) {
+      try {
+        aiVoiceRecognitionRef.current.stop()
+      } catch (_) {}
+      setIsAiVoiceListening(false)
+      return
+    }
+
+    try {
+      if (aiVoiceRecognitionRef.current) {
+        try {
+          aiVoiceRecognitionRef.current.abort()
+        } catch (_) {}
+      }
+
+      const recognition = new SpeechRecognition()
+      recognition.continuous = false
+      recognition.interimResults = false
+      recognition.lang = 'en-US'
+      recognition.maxAlternatives = 1
+
+      recognition.onstart = () => {
+        setIsAiVoiceListening(true)
+        setActiveCategory('1-to-1 Voice Session: Listening...')
+        setAssistantReply('Listening to your botanical inquiry... Please speak your question.')
+      }
+
+      recognition.onresult = async (event: any) => {
+        const spokenQuestion = event.results[0][0].transcript
+        if (spokenQuestion) {
+          setIsAiVoiceListening(false)
+          setIsAiVoiceProcessing(true)
+          setActiveCategory(`You asked: "${spokenQuestion}"`)
+          setAssistantReply('Formulating botanical guidance...')
+
+          const contextStr = scanResult
+            ? `Plant: ${scanResult.plant}, Condition: ${scanResult.condition}, Status: ${scanResult.verdict}, Confidence: ${Math.round((scanResult.confidence || 0) * 100)}%`
+            : 'No leaf photo currently scanned.'
+
+          try {
+            const answer = await voiceAssistant.askAssistant(spokenQuestion, contextStr)
+            setAssistantReply(answer)
+            voiceAssistant.speakText(answer)
+          } catch (err) {
+            console.error('AI voice error:', err)
+            setAssistantReply('Unable to process voice inquiry. Please try again.')
+          } finally {
+            setIsAiVoiceProcessing(false)
+          }
+        }
+      }
+
+      recognition.onerror = (event: any) => {
+        console.warn('AI voice error:', event.error)
+        setIsAiVoiceListening(false)
+        setIsAiVoiceProcessing(false)
+        if (event.error === 'not-allowed') {
+          alert('Microphone access was blocked. Please permit microphone access in your browser settings.')
+        }
+      }
+
+      recognition.onend = () => {
+        setIsAiVoiceListening(false)
+      }
+
+      aiVoiceRecognitionRef.current = recognition
+      recognition.start()
+    } catch (e) {
+      console.warn('AI voice start error:', e)
+      setIsAiVoiceListening(false)
+      setIsAiVoiceProcessing(false)
     }
   }
 
@@ -447,13 +536,35 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
             onChange={(e) => setUserQuery(e.target.value)}
           />
 
+          {/* Existing Button: Captures user speech and places it in text box */}
           <button
             type="button"
             className={`voice-mic-btn ${isListening ? 'listening' : ''}`}
             onClick={handleToggleMic}
-            title={isListening ? 'Listening... click to stop' : 'Ask with microphone'}
+            title={isListening ? 'Listening... click to stop' : 'Dictate voice into text box'}
+            aria-label="Dictate voice into text box"
           >
             🎤
+          </button>
+
+          {/* New Button: Initiates two-way AI-to-user voice conversation */}
+          <button
+            type="button"
+            className={`voice-ai-talk-btn ${
+              isAiVoiceListening ? 'listening' : isAiVoiceProcessing ? 'processing' : ''
+            }`}
+            onClick={handleToggleAiVoice}
+            title={
+              isAiVoiceListening
+                ? 'Listening to question... click to stop'
+                : isAiVoiceProcessing
+                ? 'Thinking...'
+                : 'Start 1-to-1 voice conversation with AI'
+            }
+            aria-label="Start 1-to-1 voice conversation with AI"
+          >
+            <span>🗣️</span>
+            <span>{isAiVoiceListening ? 'Listening...' : isAiVoiceProcessing ? 'Thinking...' : 'AI Voice'}</span>
           </button>
 
           <button

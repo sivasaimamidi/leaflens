@@ -415,6 +415,40 @@
   50% { transform: scale(1.1); }
 }
 
+.voice-ai-talk-btn {
+  background: linear-gradient(135deg, #1c4d2d 0%, #2f6b45 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 100px;
+  padding: 0 10px;
+  height: 30px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(28, 77, 45, 0.25);
+}
+
+.voice-ai-talk-btn:hover {
+  background: #143b22;
+  transform: translateY(-1px);
+}
+
+.voice-ai-talk-btn.listening {
+  background: #e74c3c;
+  animation: pulseMic 1.2s infinite;
+}
+
+.voice-ai-talk-btn.processing {
+  background: #d99b26;
+  opacity: 0.9;
+}
+
 .voice-send-btn {
   background: var(--leaf, #2f6b45);
   color: #ffffff;
