@@ -41,6 +41,13 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
   const [isAiVoiceProcessing, setIsAiVoiceProcessing] = useState<boolean>(false)
   const aiVoiceRecognitionRef = useRef<any>(null)
 
+  // Conversational Continuity & Memory of all prior questions
+  const [_conversationHistory, setConversationHistory] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([])
+  const conversationHistoryRef = useRef<Array<{ role: 'user' | 'assistant'; text: string }>>([])
+  const silenceTimerRef = useRef<any>(null)
+  const isAiVoiceModeActiveRef = useRef<boolean>(false)
+  const accumulatedSpeechRef = useRef<string>('')
+
   // Last spoken diagnosis hash to prevent duplicate auto-trigger on re-renders
   const lastSpokenKeyRef = useRef<string>('')
 
@@ -154,22 +161,31 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     voiceAssistant.speakText(content.speechText)
   }
 
-  // Freeform custom question input
+  // Freeform custom question input with conversation history memory
   const handleAskAssistant = async (queryToAsk?: string) => {
     const q = (queryToAsk || userQuery).trim()
     if (!q || isAnswering) return
 
     setIsAnswering(true)
     setUserQuery('')
-    setActiveCategory(`Question: "${q}"`)
+    setActiveCategory(`You asked: "${q}"`)
 
     const contextStr = scanResult
       ? `Plant: ${scanResult.plant}, Condition: ${scanResult.condition}, Status: ${scanResult.verdict}, Confidence: ${Math.round((scanResult.confidence || 0) * 100)}%`
       : 'No leaf photo currently scanned.'
 
     try {
-      const reply = await voiceAssistant.askAssistant(q, contextStr)
+      const reply = await voiceAssistant.askAssistant(q, contextStr, conversationHistoryRef.current)
       setAssistantReply(reply)
+
+      const updatedHistory = [
+        ...conversationHistoryRef.current,
+        { role: 'user' as const, text: q },
+        { role: 'assistant' as const, text: reply },
+      ]
+      conversationHistoryRef.current = updatedHistory
+      setConversationHistory(updatedHistory)
+
       voiceAssistant.speakText(reply)
     } catch (err) {
       console.error('Error asking assistant:', err)
@@ -243,7 +259,7 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     }
   }
 
-  // 1-to-1 AI Voice Interaction handler: captures speech, asks AI, and speaks response aloud
+  // 1-to-1 AI Voice Interaction handler: continuous microphone, zero preliminary flutter, memory retention
   const handleToggleAiVoice = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -253,69 +269,94 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       return
     }
 
-    if (isAiVoiceListening && aiVoiceRecognitionRef.current) {
-      try {
-        aiVoiceRecognitionRef.current.stop()
-      } catch (_) {}
+    if (isAiVoiceModeActiveRef.current) {
+      isAiVoiceModeActiveRef.current = false
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+      if (aiVoiceRecognitionRef.current) {
+        try {
+          aiVoiceRecognitionRef.current.stop()
+        } catch (_) {}
+      }
       setIsAiVoiceListening(false)
+      setIsAiVoiceProcessing(false)
       return
     }
 
-    try {
-      if (aiVoiceRecognitionRef.current) {
-        try {
-          aiVoiceRecognitionRef.current.abort()
-        } catch (_) {}
-      }
+    isAiVoiceModeActiveRef.current = true
+    startAiVoiceListening()
+  }
 
+  const startAiVoiceListening = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
+    if (!SpeechRecognition || !isAiVoiceModeActiveRef.current) return
+
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+    if (aiVoiceRecognitionRef.current) {
+      try {
+        aiVoiceRecognitionRef.current.abort()
+      } catch (_) {}
+    }
+
+    try {
       const recognition = new SpeechRecognition()
-      recognition.continuous = false
-      recognition.interimResults = false
+      recognition.continuous = true
+      recognition.interimResults = true
       recognition.lang = 'en-US'
       recognition.maxAlternatives = 1
 
+      accumulatedSpeechRef.current = ''
+
       recognition.onstart = () => {
         setIsAiVoiceListening(true)
-        setActiveCategory('1-to-1 Voice Session: Listening...')
-        setAssistantReply('Listening to your botanical inquiry... Please speak your question.')
+        setIsAiVoiceProcessing(false)
+        // No preliminary placeholder messages in assistantReply to eliminate response flutter
       }
 
-      recognition.onresult = async (event: any) => {
-        const spokenQuestion = event.results[0][0].transcript
-        if (spokenQuestion) {
-          setIsAiVoiceListening(false)
-          setIsAiVoiceProcessing(true)
-          setActiveCategory(`You asked: "${spokenQuestion}"`)
-          setAssistantReply('Formulating botanical guidance...')
+      recognition.onresult = (event: any) => {
+        let transcript = ''
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript + ' '
+        }
+        transcript = transcript.trim()
 
-          const contextStr = scanResult
-            ? `Plant: ${scanResult.plant}, Condition: ${scanResult.condition}, Status: ${scanResult.verdict}, Confidence: ${Math.round((scanResult.confidence || 0) * 100)}%`
-            : 'No leaf photo currently scanned.'
+        if (transcript) {
+          accumulatedSpeechRef.current = transcript
 
-          try {
-            const answer = await voiceAssistant.askAssistant(spokenQuestion, contextStr)
-            setAssistantReply(answer)
-            voiceAssistant.speakText(answer)
-          } catch (err) {
-            console.error('AI voice error:', err)
-            setAssistantReply('Unable to process voice inquiry. Please try again.')
-          } finally {
-            setIsAiVoiceProcessing(false)
-          }
+          // Keep microphone active while user speaks; require 1.8s of silence before concluding user has finished
+          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+          silenceTimerRef.current = setTimeout(() => {
+            const finalQuery = accumulatedSpeechRef.current.trim()
+            if (finalQuery && isAiVoiceModeActiveRef.current) {
+              try {
+                recognition.stop()
+              } catch (_) {}
+              processSpokenQuestion(finalQuery)
+            }
+          }, 1800)
         }
       }
 
       recognition.onerror = (event: any) => {
-        console.warn('AI voice error:', event.error)
-        setIsAiVoiceListening(false)
-        setIsAiVoiceProcessing(false)
+        console.warn('AI voice recognition error:', event.error)
         if (event.error === 'not-allowed') {
           alert('Microphone access was blocked. Please permit microphone access in your browser settings.')
+          isAiVoiceModeActiveRef.current = false
+          setIsAiVoiceListening(false)
+          setIsAiVoiceProcessing(false)
         }
       }
 
       recognition.onend = () => {
         setIsAiVoiceListening(false)
+        if (isAiVoiceModeActiveRef.current && !isAiVoiceProcessing) {
+          setTimeout(() => {
+            if (isAiVoiceModeActiveRef.current && !isAiVoiceProcessing) {
+              startAiVoiceListening()
+            }
+          }, 300)
+        }
       }
 
       aiVoiceRecognitionRef.current = recognition
@@ -323,6 +364,52 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     } catch (e) {
       console.warn('AI voice start error:', e)
       setIsAiVoiceListening(false)
+      setIsAiVoiceProcessing(false)
+    }
+  }
+
+  const processSpokenQuestion = async (spokenQuestion: string) => {
+    setIsAiVoiceListening(false)
+    setIsAiVoiceProcessing(true)
+
+    // Set category label directly without overwriting assistantReply until final answer is ready
+    setActiveCategory(`You asked: "${spokenQuestion}"`)
+
+    const contextStr = scanResult
+      ? `Plant: ${scanResult.plant}, Condition: ${scanResult.condition}, Status: ${scanResult.verdict}, Confidence: ${Math.round((scanResult.confidence || 0) * 100)}%`
+      : 'No leaf photo currently scanned.'
+
+    try {
+      const answer = await voiceAssistant.askAssistant(
+        spokenQuestion,
+        contextStr,
+        conversationHistoryRef.current
+      )
+
+      // Deliver single final answer directly with ZERO preliminary flutter
+      setAssistantReply(answer)
+
+      // Update conversation history
+      const updatedHistory = [
+        ...conversationHistoryRef.current,
+        { role: 'user' as const, text: spokenQuestion },
+        { role: 'assistant' as const, text: answer },
+      ]
+      conversationHistoryRef.current = updatedHistory
+      setConversationHistory(updatedHistory)
+
+      // Deliver answer aloud
+      await voiceAssistant.speakText(answer)
+
+      // Maintain conversational continuity: keep microphone open for next user question
+      if (isAiVoiceModeActiveRef.current) {
+        setIsAiVoiceProcessing(false)
+        startAiVoiceListening()
+      }
+    } catch (err) {
+      console.error('AI voice error:', err)
+      setAssistantReply('I can answer questions regarding your plant diagnosis, precautions, or care routine.')
+    } finally {
       setIsAiVoiceProcessing(false)
     }
   }

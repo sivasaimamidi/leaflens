@@ -289,9 +289,23 @@ export function getPrivacyButtonContent(): ButtonContent {
   }
 }
 
-function getBotanicalFallback(query: string, plantContext?: string): string {
+function getBotanicalFallback(
+  query: string,
+  plantContext?: string,
+  history?: Array<{ role: string; text: string }>
+): string {
   const q = query.toLowerCase()
-  const ctx = (plantContext || '').toLowerCase()
+  let ctx = (plantContext || '').toLowerCase()
+
+  if (history) {
+    for (const item of history) {
+      const prev = item.text.toLowerCase()
+      if (prev.includes('snake') || prev.includes('sansevieria')) ctx += ' snake plant'
+      if (prev.includes('tomato')) ctx += ' tomato'
+      if (prev.includes('potato')) ctx += ' potato'
+      if (prev.includes('pepper')) ctx += ' pepper'
+    }
+  }
 
   if (q.includes('precaution') || q.includes('prevent') || q.includes('avoid') || q.includes('protect')) {
     if (ctx.includes('snake') || q.includes('sansevieria')) {
@@ -305,6 +319,9 @@ function getBotanicalFallback(query: string, plantContext?: string): string {
   }
 
   if (q.includes('water') || q.includes('moisture') || q.includes('irrigation')) {
+    if (ctx.includes('snake')) {
+      return "For Snake Plants, water sparingly only when the potting mix is completely dry, typically every two to three weeks, and avoid letting water sit in the rosette center."
+    }
     return "Water thoroughly only when the top few inches of soil are dry to the touch, ensure pots have unobstructed drainage holes, and avoid letting roots sit in pooled water."
   }
 
@@ -450,7 +467,8 @@ class VoiceAssistantService {
    */
   public async askAssistant(
     question: string,
-    currentDiagnosisContext?: string
+    currentDiagnosisContext?: string,
+    history: Array<{ role: string; text: string }> = []
   ): Promise<string> {
     const prompt = `
 Role: You are a formal botanical specialist and voice assistant.
@@ -459,16 +477,29 @@ Task: Answer user queries strictly regarding plants, foliage, horticulture, and 
 Directives:
 1. Formal One-to-One Tone: Address the user directly with courteous, professional phrasing (e.g., "Regarding your inquiry...", "I advise that...").
 2. Plant-Only Scope: Discuss exclusively plants, leaves, botany, and cultivation. If the user asks about an unrelated topic, respond solely with: "I am designated exclusively to assist with botanical and plant-related topics. Please let me know if you have an inquiry regarding plants, foliage, or crop care."
-3. No Unfounded Assumptions: Do not assume or invent facts beyond what the user has stated.
-4. Voice Synthesis Ready: Provide plain text only without markdown formatting (no asterisks, headings, bullet marks, or emojis) so the output sounds natural and articulate when read by a voice synthesizer. Deliver your answer in 2 to 4 concise sentences.
+3. Conversational Continuity: Maintain context from prior turns in the conversation to resolve pronouns and references.
+4. No Unfounded Assumptions: Do not assume or invent facts beyond what the user has stated.
+5. Voice Synthesis Ready: Provide plain text only without markdown formatting (no asterisks, headings, bullet marks, or emojis) so the output sounds natural and articulate when read by a voice synthesizer. Deliver your answer in 2 to 4 concise sentences.
 `
+
+    const historyStr =
+      history.length > 0
+        ? `Prior Conversation History:\n${history
+            .slice(-6)
+            .map((h) => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.text}`)
+            .join('\n')}\n\n`
+        : ''
 
     try {
       try {
         const resp = await fetch('/api/assistant', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: question, plant_context: currentDiagnosisContext }),
+          body: JSON.stringify({
+            prompt: question,
+            plant_context: currentDiagnosisContext,
+            history: history.slice(-6),
+          }),
         })
         if (resp.ok) {
           const data = await resp.json()
@@ -491,7 +522,7 @@ Directives:
                     {
                       text: `${prompt}\n${
                         currentDiagnosisContext ? `Current Plant Context: ${currentDiagnosisContext}\n` : ''
-                      }User Query: ${question}`
+                      }${historyStr}User Query: ${question}`
                     }
                   ]
                 }
@@ -509,10 +540,10 @@ Directives:
         }
       }
 
-      return getBotanicalFallback(question, currentDiagnosisContext)
+      return getBotanicalFallback(question, currentDiagnosisContext, history)
     } catch (err: any) {
       console.error('AskAssistant error:', err)
-      return getBotanicalFallback(question, currentDiagnosisContext)
+      return getBotanicalFallback(question, currentDiagnosisContext, history)
     }
   }
 }

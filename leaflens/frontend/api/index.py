@@ -355,11 +355,25 @@ def tts_generate(payload: TTSPayload):
 class AssistantPayload(BaseModel):
     prompt: str
     plant_context: Optional[str] = None
+    history: Optional[List[Dict[str, str]]] = None
 
 
-def get_botanical_fallback(query: str, plant_context: Optional[str] = None) -> str:
+def get_botanical_fallback(query: str, plant_context: Optional[str] = None, history: Optional[List[Dict[str, str]]] = None) -> str:
     q = query.lower()
     ctx = (plant_context or "").lower()
+    
+    # Check history if current query lacks context
+    if history:
+        for item in reversed(history):
+            prev = item.get("text", "").lower()
+            if "snake" in prev:
+                ctx += " snake plant"
+            elif "tomato" in prev:
+                ctx += " tomato"
+            elif "potato" in prev:
+                ctx += " potato"
+            elif "pepper" in prev:
+                ctx += " pepper"
 
     if "precaution" in q or "prevent" in q or "avoid" in q or "protect" in q:
         if "snake" in ctx or "sansevieria" in q:
@@ -370,6 +384,8 @@ def get_botanical_fallback(query: str, plant_context: Optional[str] = None) -> s
         return "For active treatment, immediately prune and isolate affected foliage to stop pathogen spread, improve air circulation, and apply a targeted copper or organic bio-fungicide spray suited for the condition."
 
     if "water" in q or "moisture" in q or "irrigation" in q:
+        if "snake" in ctx:
+            return "For Snake Plants, water sparingly only when the potting mix is dry all the way through, approximately once every 2 to 3 weeks, and empty any runoff from the saucer."
         return "Water thoroughly only when the top few inches of soil are dry to the touch, ensure pots have unobstructed drainage holes, and avoid letting roots sit in pooled water."
 
     if "light" in q or "sun" in q:
@@ -383,13 +399,13 @@ def get_botanical_fallback(query: str, plant_context: Optional[str] = None) -> s
 def chat_assistant(payload: AssistantPayload):
     """
     Conversational Plant Pathology Voice Assistant grounded in botanical guidance.
-    Powered by Gemini 2.5 Flash with intelligent botanical fallback.
+    Powered by Gemini 2.5 Flash with full conversation history and intelligent fallback.
     """
     query_text = payload.prompt.strip()
 
     if not GEMINI_API_KEY:
         return {
-            "reply": get_botanical_fallback(query_text, payload.plant_context),
+            "reply": get_botanical_fallback(query_text, payload.plant_context, payload.history),
             "model": "offline-botanical-engine"
         }
 
@@ -397,6 +413,7 @@ def chat_assistant(payload: AssistantPayload):
         "You are a formal botanical specialist and voice assistant. "
         "Answer user queries strictly regarding plants, foliage, horticulture, and plant pathology in a formal, one-to-one conversational style. "
         "Speak directly to the user in a professional, courteous manner. "
+        "Maintain conversational continuity by referencing prior context when appropriate. "
         "Discuss exclusively plants, leaves, and related botanical topics. If the query is unrelated to plants or their parts, respond solely with: "
         "'I am designated exclusively to assist with botanical and plant-related topics. Please let me know if you have an inquiry regarding plants, foliage, or crop care.' "
         "Do not assume or extrapolate new information beyond what the user has provided. "
@@ -405,13 +422,20 @@ def chat_assistant(payload: AssistantPayload):
     )
 
     context_info = f"Current Plant Context: {payload.plant_context}\n" if payload.plant_context else ""
-    combined_input = f"{system_knowledge}\n{context_info}User Query: {query_text}"
+    
+    history_str = ""
+    if payload.history:
+        history_lines = [f"{item.get('role', 'user').capitalize()}: {item.get('text', '')}" for item in payload.history[-6:]]
+        if history_lines:
+            history_str = "Prior Conversation History:\n" + "\n".join(history_lines) + "\n\n"
+
+    combined_input = f"{system_knowledge}\n{context_info}{history_str}User Query: {query_text}"
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     req_body = {
         "contents": [
             {
-                "parts": [{"text": combined_input[:3000]}]
+                "parts": [{"text": combined_input[:4000]}]
             }
         ]
     }
@@ -432,7 +456,7 @@ def chat_assistant(payload: AssistantPayload):
                         "reply": parts[0]["text"].strip(),
                         "model": "gemini-2.5-flash"
                     }
-        return {"reply": get_botanical_fallback(query_text, payload.plant_context), "model": "botanical-fallback"}
+        return {"reply": get_botanical_fallback(query_text, payload.plant_context, payload.history), "model": "botanical-fallback"}
     except Exception as e:
         print(f"Assistant endpoint error: {e}")
-        return {"reply": get_botanical_fallback(query_text, payload.plant_context), "model": "botanical-fallback"}
+        return {"reply": get_botanical_fallback(query_text, payload.plant_context, payload.history), "model": "botanical-fallback"}
