@@ -173,38 +173,61 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     }
   }
 
-  // Speech-to-text mic input handler
+  // Speech-to-text mic input handler: transcribes audio and displays directly in text box
   const handleToggleMic = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
 
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please type your question.')
+      alert('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari, or type your question.')
       return
     }
 
     if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop()
+      try {
+        recognitionRef.current.stop()
+      } catch (_) {}
       setIsListening(false)
       return
     }
 
     try {
-      const recognition = new SpeechRecognition()
-      recognition.continuous = false
-      recognition.interimResults = false
-      recognition.lang = 'en-US'
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort()
+        } catch (_) {}
+      }
 
-      recognition.onstart = () => setIsListening(true)
-      recognition.onend = () => setIsListening(false)
-      recognition.onerror = () => setIsListening(false)
+      const recognition = new SpeechRecognition()
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognition.lang = 'en-US'
+      recognition.maxAlternatives = 1
+
+      recognition.onstart = () => {
+        setIsListening(true)
+      }
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript
-        if (transcript) {
-          setUserQuery(transcript)
-          handleAskAssistant(transcript)
+        let fullTranscript = ''
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript
         }
+        if (fullTranscript) {
+          setUserQuery(fullTranscript)
+        }
+      }
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition error:', event.error)
+        setIsListening(false)
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          alert('Microphone access was blocked. Please permit microphone access in your browser settings.')
+        }
+      }
+
+      recognition.onend = () => {
+        setIsListening(false)
       }
 
       recognitionRef.current = recognition
