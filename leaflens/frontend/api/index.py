@@ -352,6 +352,32 @@ def tts_generate(payload: TTSPayload):
         return {"error": str(e), "fallback": True}
 
 
+@app.get("/api/tts_audio")
+@app.get("/tts_audio")
+def tts_audio_proxy(text: str, tl: str = "te"):
+    """
+    Proxies Google Translate TTS audio for authentic, crystal-clear native Indic speech
+    (Telugu, Tamil, Kannada, Malayalam, Hindi, English).
+    """
+    import urllib.parse
+    from fastapi.responses import Response
+
+    lang_code = (tl or "te").split("-")[0].lower()
+    clean_text = text.strip()[:300]
+    encoded_text = urllib.parse.quote(clean_text)
+    url = f"https://translate.google.com/translate_tts?ie=UTF-8&tl={lang_code}&client=tw-ob&q={encoded_text}"
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            content = resp.read()
+            return Response(content=content, media_type="audio/mpeg")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"TTS Audio error: {e}")
+
+
 class AssistantPayload(BaseModel):
     prompt: str
     plant_context: Optional[str] = None

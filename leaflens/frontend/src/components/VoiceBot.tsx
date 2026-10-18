@@ -69,7 +69,10 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     }
   }, [])
 
-  // Auto-trigger spoken diagnosis when a new scan result is produced or language changes
+  const selectedLanguageRef = useRef<string>(selectedLanguage)
+  selectedLanguageRef.current = selectedLanguage
+
+  // Auto-trigger spoken diagnosis when a new scan result is produced
   useEffect(() => {
     if (!scanResult) {
       setSpokenText('')
@@ -81,21 +84,22 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       return
     }
 
-    const resultKey = `${scanResult.plant || ''}-${scanResult.condition || ''}-${scanResult.confidence || ''}-${selectedLanguage}`
+    const resultKey = `${scanResult.plant || ''}-${scanResult.condition || ''}-${scanResult.confidence || ''}`
     if (resultKey === lastSpokenKeyRef.current) return
     lastSpokenKeyRef.current = resultKey
 
-    const { text, isDecisionMode: decisionMode, phoneticText } = buildDiagnosisSpeechText(scanResult, selectedLanguage)
+    const currentLang = selectedLanguageRef.current
+    const { text, isDecisionMode: decisionMode, phoneticText } = buildDiagnosisSpeechText(scanResult, currentLang)
     setSpokenText(text)
     setIsDecisionMode(decisionMode)
 
-    // On/Off Rule: If toggle is ON, announce immediately. If OFF, stay completely silent.
-    if (isVoiceOn) {
-      voiceAssistant.speakText(text, selectedLanguage, phoneticText)
-    } else {
+    // On/Off Rule: If toggle is ON and AI Voice mode is NOT active, announce immediately. If OFF, stay silent.
+    if (isVoiceOn && !isAiVoiceModeActiveRef.current) {
+      voiceAssistant.speakText(text, currentLang, phoneticText)
+    } else if (!isVoiceOn) {
       voiceAssistant.stop()
     }
-  }, [scanResult, isVoiceOn, selectedLanguage])
+  }, [scanResult, isVoiceOn])
 
   // Toggle On/Off handler
   const handleToggleVoiceOn = () => {
@@ -180,6 +184,24 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       window.dispatchEvent(new CustomEvent('leaflens-lang-changed', { detail: code }))
     }
 
+    // If 1-to-1 AI Voice mode is currently active:
+    // Seamlessly update recognition language and remain listening quietly.
+    // NEVER play the initial diagnosis announcement over the speaker or interrupt the conversational voice flow!
+    if (isAiVoiceModeActiveRef.current) {
+      if (scanResult) {
+        const { text, isDecisionMode: decisionMode } = buildDiagnosisSpeechText(scanResult, code)
+        setSpokenText(text)
+        setIsDecisionMode(decisionMode)
+      }
+      if (aiVoiceRecognitionRef.current) {
+        try {
+          aiVoiceRecognitionRef.current.abort()
+        } catch {}
+      }
+      startAiVoiceListening(code)
+      return
+    }
+
     // If an action button was active, reload its content in the newly selected language
     if (activeActionRef.current && scanResult) {
       const action = activeActionRef.current as 'precautions' | 'cure' | 'supported_plants' | 'plans' | 'privacy'
@@ -217,15 +239,6 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       if (isVoiceOn) {
         voiceAssistant.speakText(text, code, phoneticText)
       }
-    }
-
-    if (isAiVoiceModeActiveRef.current) {
-      if (aiVoiceRecognitionRef.current) {
-        try {
-          aiVoiceRecognitionRef.current.abort()
-        } catch {}
-      }
-      startAiVoiceListening(code)
     }
   }
 
@@ -351,11 +364,13 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
           aiVoiceRecognitionRef.current.stop()
         } catch {}
       }
+      voiceAssistant.stop()
       setIsAiVoiceListening(false)
       setIsAiVoiceProcessing(false)
       return
     }
 
+    voiceAssistant.stop()
     isAiVoiceModeActiveRef.current = true
     startAiVoiceListening()
   }
@@ -448,6 +463,17 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
     setIsAiVoiceListening(false)
     setIsAiVoiceProcessing(true)
 
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current)
+      silenceTimerRef.current = null
+    }
+
+    if (aiVoiceRecognitionRef.current) {
+      try {
+        aiVoiceRecognitionRef.current.abort()
+      } catch {}
+    }
+
     // Set category label directly without overwriting assistantReply until final answer is ready
     setActiveCategory(`You asked: "${spokenQuestion}"`)
 
@@ -479,9 +505,14 @@ export const VoiceBot: React.FC<VoiceBotProps> = ({ scanResult }) => {
       await voiceAssistant.speakText(answer, selectedLanguage)
 
       // Maintain conversational continuity: keep microphone open for next user question
+      // 400ms acoustic guard delay prevents the microphone from capturing reverberation or speaker echo
       if (isAiVoiceModeActiveRef.current) {
         setIsAiVoiceProcessing(false)
-        startAiVoiceListening()
+        setTimeout(() => {
+          if (isAiVoiceModeActiveRef.current && !voiceAssistant.getIsSpeaking()) {
+            startAiVoiceListening()
+          }
+        }, 400)
       }
     } catch (err) {
       console.error('AI voice error:', err)

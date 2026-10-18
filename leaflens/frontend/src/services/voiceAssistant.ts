@@ -1257,11 +1257,16 @@ class VoiceAssistantService {
     this.emit()
   }
 
+  public getIsSpeaking(): boolean {
+    return this.isSpeaking
+  }
+
   /**
-   * Ultra-fast zero-latency speech synthesis (< 0.2s start time).
+   * Ultra-fast zero-latency speech synthesis.
    * Fully supports English, Telugu, Tamil, Hindi, Kannada, and Malayalam.
-   * If the host device does not have native Indic TTS installed, falls back smoothly
-   * to phonetic speech with an Indian English voice so playback is NEVER SILENT and never errors.
+   * Uses native browser voices when available; when a browser lacks an Indic voice
+   * (e.g. Chrome on Windows for Telugu/Tamil/Kannada/Malayalam), it plays clear native
+   * audio through Google TTS streaming so audio NEVER breaks, never stutters, and never errors.
    */
   public async speakText(
     text: string,
@@ -1277,8 +1282,29 @@ class VoiceAssistantService {
     this.isSpeaking = true
     this.emit()
 
+    const targetLang = forcedLang && forcedLang !== 'auto' ? forcedLang : detectLanguage(text)
+    const langPrefix = targetLang.split('-')[0].toLowerCase()
+
     try {
-      const targetLang = forcedLang && forcedLang !== 'auto' ? forcedLang : detectLanguage(text)
+      // 1. If host browser has a native high-quality voice for this language (e.g. Hindi on Chrome, or Edge Natural voices), use native speech!
+      const voices = (typeof window !== 'undefined' && 'speechSynthesis' in window) ? window.speechSynthesis.getVoices() : []
+      const nativeVoice = voices.find((v) => v.lang.toLowerCase().startsWith(langPrefix))
+
+      if (nativeVoice) {
+        await this.speakBrowserNative(text, targetLang, phoneticFallback)
+        return { speechText: text, isDecisionMode: text.includes('decision mode'), source: 'browser-speech' }
+      }
+
+      // 2. If no native voice exists on this browser (e.g. Chrome on Windows for Telugu, Tamil, Kannada, Malayalam),
+      // play crystal-clear native Indic audio stream instead of garbled English robot transliteration!
+      if (langPrefix !== 'en') {
+        const audioSuccess = await this.playAudioStream(text, langPrefix)
+        if (audioSuccess) {
+          return { speechText: text, isDecisionMode: text.includes('decision mode'), source: 'gemini-tts' }
+        }
+      }
+
+      // 3. Fallback to browser speech if audio stream is unavailable
       await this.speakBrowserNative(text, targetLang, phoneticFallback)
       return {
         speechText: text,
@@ -1296,6 +1322,63 @@ class VoiceAssistantService {
       this.isSpeaking = false
       this.emit()
     }
+  }
+
+  private playAudioStream(text: string, langPrefix: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        const cleanText = text.replace(/[*_#`]/g, '').trim().slice(0, 300)
+        if (!cleanText) {
+          resolve(false)
+          return
+        }
+
+        const directUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${langPrefix}&client=tw-ob&q=${encodeURIComponent(cleanText)}`
+        const proxyUrl = `/api/tts_audio?tl=${langPrefix}&text=${encodeURIComponent(cleanText)}`
+
+        let hasFinished = false
+        const finish = (ok: boolean) => {
+          if (hasFinished) return
+          hasFinished = true
+          this.currentAudio = null
+          resolve(ok)
+        }
+
+        const audio = new Audio()
+        this.currentAudio = audio
+
+        audio.onended = () => finish(true)
+        audio.onerror = () => {
+          // If direct URL fails, fallback to backend proxy
+          const fallbackAudio = new Audio(proxyUrl)
+          this.currentAudio = fallbackAudio
+          fallbackAudio.onended = () => finish(true)
+          fallbackAudio.onerror = () => finish(false)
+          fallbackAudio.play().catch(() => finish(false))
+        }
+
+        audio.src = directUrl
+        audio.play().catch(() => {
+          // Retry with proxy
+          const fallbackAudio = new Audio(proxyUrl)
+          this.currentAudio = fallbackAudio
+          fallbackAudio.onended = () => finish(true)
+          fallbackAudio.onerror = () => finish(false)
+          fallbackAudio.play().catch(() => finish(false))
+        })
+
+        // Watchdog
+        const words = cleanText.split(/\s+/).length
+        const maxMs = Math.max(7000, words * 800)
+        setTimeout(() => {
+          if (!hasFinished) {
+            finish(true)
+          }
+        }, maxMs)
+      } catch {
+        resolve(false)
+      }
+    })
   }
 
   private speakBrowserNative(text: string, lang: string = 'en-IN', phoneticFallback?: string): Promise<void> {
