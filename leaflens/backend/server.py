@@ -392,14 +392,16 @@ def chat_assistant(payload: AssistantPayload):
         raise HTTPException(status_code=500, detail="Gemini API key not configured")
 
     system_knowledge = (
-        "You are the LeafLens Voice Assistant, an intelligent agricultural AI specialist for the LeafLens Plant Pathology System. "
-        "LeafLens is an ECS Mini Project (2026-27) that diagnoses 18 classes across Tomato (10 classes), Potato (3 classes), "
-        "Bell Pepper (2 classes), and Snake Plant (3 classes: Healthy, Anthracnose, Leaf Withering). "
-        "LeafLens operates 100% locally on the user's device for complete privacy under a Free Academic Open-Access Plan (100% free forever, unlimited scans). "
-        "Answer questions clearly and concisely in 2 to 4 sentences so it is pleasant to hear spoken aloud."
+        "You are a formal botanical specialist and voice assistant. "
+        "Answer user queries strictly regarding plants, foliage, horticulture, and plant pathology in a formal, one-to-one conversational style. "
+        "Speak directly to the user in a professional, courteous manner. "
+        "Discuss exclusively plants, leaves, and related botanical topics. If the query is unrelated to plants or their parts, respond solely with: "
+        "'I am designated exclusively to assist with botanical and plant-related topics. Please let me know if you have an inquiry regarding plants, foliage, or crop care.' "
+        "Do not assume or extrapolate new information beyond what the user has provided. "
+        "Provide plain text responses without markdown formatting or bullet points, suitable for voice synthesis, in 2 to 4 concise sentences."
     )
 
-    combined_input = f"{system_knowledge}\nContext: {payload.plant_context or 'No scan yet'}\nUser: {payload.prompt}"
+    combined_input = f"{system_knowledge}\nUser Query: {payload.prompt}"
 
     url = f"https://generativelanguage.googleapis.com/v1beta/interactions?key={GEMINI_API_KEY}"
     req_body = {
