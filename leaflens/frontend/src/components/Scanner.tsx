@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import './Scanner.css'
 import { getDiseaseRecommendation } from '../data/diseaseRecommendations'
 import { VoiceBot } from './VoiceBot'
+import { syncPredictionToFirebase } from '../services/firebase'
 import {
   getLocalizedPlantName,
   getLocalizedConditionName,
@@ -77,6 +78,7 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [scanDuration, setScanDuration] = useState<number | null>(null)
   const [backendOffline, setBackendOffline] = useState<boolean>(false)
+  const [firebaseSyncStatus, setFirebaseSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle')
 
   // Multilingual synchronization
   const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
@@ -368,6 +370,7 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setIsScanning(true)
     setTrafficState('scanning')
     setScanResult(null)
+    setFirebaseSyncStatus('idle')
     setBackendOffline(false)
     const startTime = performance.now()
 
@@ -448,6 +451,7 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setIsScanning(true)
     setTrafficState('scanning')
     setScanResult(null)
+    setFirebaseSyncStatus('idle')
     setBackendOffline(false)
     const startTime = performance.now()
 
@@ -609,6 +613,22 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setTrafficState('uncertain')
       }
 
+      // Automatically sync diagnosis result to Firebase Realtime Database
+      // for the hardware display device (latest_prediction node)
+      if (data.verdict !== 'uncertain' || data.plant || data.class_name) {
+        setFirebaseSyncStatus('syncing')
+        syncPredictionToFirebase(data)
+          .then(() => {
+            setFirebaseSyncStatus('synced')
+          })
+          .catch((fbErr) => {
+            console.warn('[Firebase RTDB] Hardware sync warning:', fbErr)
+            setFirebaseSyncStatus('error')
+          })
+      } else {
+        setFirebaseSyncStatus('idle')
+      }
+
       const totalTime = Math.round(performance.now() - startTime)
       setScanDuration(totalTime)
 
@@ -659,6 +679,7 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setFrozenFrame(null)
     setScanResult(null)
     setTrafficState('idle')
+    setFirebaseSyncStatus('idle')
     setScanDuration(null)
     setBackendOffline(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -875,6 +896,16 @@ export const Scanner: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <div>
                 <div className="result-header-row">
                   <div className="analysis-badge">🌿 Leaf analysis</div>
+                  {firebaseSyncStatus === 'synced' && (
+                    <span className="firebase-sync-pill" title="Real-time synced to hardware display via Firebase RTDB">
+                      ⚡ Synced to Display
+                    </span>
+                  )}
+                  {firebaseSyncStatus === 'syncing' && (
+                    <span className="firebase-sync-pill syncing" title="Syncing to Firebase Realtime Database...">
+                      🔄 Syncing to Display...
+                    </span>
+                  )}
                   <span className={`status-pill status-pill-${scanResult.verdict}`}>
                     {getLocalizedVerdict(scanResult.verdict, selectedLanguage)}
                   </span>

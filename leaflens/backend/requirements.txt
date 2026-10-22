@@ -1,5 +1,6 @@
 # LeafLens Backend Runtime and Testing Dependencies
 fastapi>=0.115.0
+flask>=3.0.0
 uvicorn>=0.30.0
 tensorflow>=2.16.0
 pillow>=10.4.0
